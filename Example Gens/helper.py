@@ -32,7 +32,7 @@ class GptResponse:
         self.usage = response['usage']
 
 
-openai.api_key = "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"
+openai.api_key = "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"
 
 def load_required_data(DATA_DIR):
     print('Starting to load rule data')
@@ -130,13 +130,21 @@ def extract_rules(
         if antecedents.issubset(set(recipe)):
             # Add the row to the list to be returned
             # Make sure the consequents are NOT in the recipe
-            consequents = set(row['consequents'])
-            if not consequents.issubset(set(recipe)) and consequents not in already_suggested:
+            # print(f"antecedents: {antecedents}, consequents: {row['consequents']}")
+            consequents = set(eval(row['consequents']))
+            # print(f"antecedents: {antecedents}, consequents: {consequents}, recipe:{set(recipe)}", not consequents.issubset(set(recipe)), frozenset(row['consequents']) not in already_suggested)
+            if not consequents.issubset(set(recipe)) and frozenset(row['consequents']) not in already_suggested:
+                # We already have a suggestion with a higher lift
+                if frozenset(row['antecedents']) in suggestions_to_return:
+                    continue
+                # print("got in!")
                 # Add the rule to the list
                 rules_to_return.add(frozenset(row['antecedents']))
                 # Add the suggestion to the dictionary
                 suggestions_to_return[frozenset(row['antecedents'])] = (row['consequents'], row['lift'])
                 already_suggested.add(frozenset(row['consequents']))
+                # print(f"rules_to_return: {rules_to_return}")
+            # print('______')
         # Break if we have found the required number of rules
         if len(rules_to_return) == rule_count:
             break
@@ -170,9 +178,26 @@ def create_prompt(title, directions, fulfilled_rules, suggestions):
     {advices}
     """
 
+def create_fewshot_prompt(title, directions, fulfilled_rules, suggestions):
+    advices = [x[0] for x in suggestions.values()]
+    return f"""
+    <OLD RECIPE>
+    {directions}
+    </OLD RECIPE>
+    <FULFILLED RULES>
+    {fulfilled_rules}
+    </FULFILLED RULES>
+    <RULES TO FULFILL>
+    {advices}
+    </RULES TO FULFILL>
+
+    Answer:
+    """
+
 def prompt_gpt(
         prompt: str,
         print_response: bool = True,
+        model="gpt-3.5-turbo",
 ) -> GptResponse:
     """
         This function takes as input a prompt and returns the response from GPT-3.5.
@@ -185,7 +210,7 @@ def prompt_gpt(
             - The response from GPT-3.5.
     """
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model=model,
         messages = [
             {
             "role": "system", "content": """
@@ -218,13 +243,14 @@ def prompt_gpt(
 def prompt_gpt_2(
         prompt: str,
         print_response: bool = True,
+        model="gpt-3.5-turbo",
 ) -> GptResponse:
     """
         A really similar function to prompt_gpt, but we try a different system prompt.
         See the documentation for prompt_gpt for more details.
     """
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model=model,
         messages = [
             {
             "role": "system", "content": """
@@ -260,13 +286,14 @@ def prompt_gpt_2(
 def prompt_gpt_3(
         prompt: str,
         print_response: bool = True,
+        model="gpt-3.5-turbo",
 ) -> GptResponse:
     """
         A really similar function to prompt_gpt, but we try a different system prompt.
         See the documentation for prompt_gpt for more details.
     """
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model=model,
         messages = [
             {
             "role": "system", "content": """
@@ -311,6 +338,191 @@ def prompt_gpt_3(
         _print_response(response)
     return response
 
+def prompt_gpt_3_extra_info(
+        prompt: str,
+        print_response: bool = True,
+        model="gpt-3.5-turbo",
+) -> GptResponse:
+    """
+    A really similar function to prompt_gpt, but we try a different system prompt.
+    See the documentation for prompt_gpt for more details.
+    """
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages = [
+            {
+            "role": "system", "content": """
+            You are a recipe improvement assistant. The improvement will be done ONLY in the scope of rules.
+            You will be givzen a recipe and a set of rules that it has already fulfilled. Note that this will just be a subset of all the rules that the recipe fulfills.
+            The rules will be of following shape: frozenset({{'word1', 'word2', ...}}) -> This means that the words word1, word2, ... should be present somewhere in the recipe. Note that, these words aren't dependent on each other. Thus they don't have to appear in the same sentence, or in the same order that they are given. It just means they have to appear at least once somewhere in the recipe.
+            The user will also give you some new set of rules that it has not fulfilled yet.
+            
+            You are responsible for rewriting the recipe. You have to make sure that the new recipe you write fulfills all the new rules, while keeping all the details from the original recipe intact.
+            Thus, you are to only add upon the original recipe, and avoid removing anything from it. You are to only add something if it directly helps you fulfill the new rules.
+            
+            You'll write two parts, the first part is the Ingredients and Instructions. The second part is the explanation.
+            The first part will be wrapped between <RECIPE> and </RECIPE> tags. In this part include the ingredient portions in the list labelled Ingredients: and then the Instructions section as a numbered list
+            
+            The second part will be wrapped between <EXPLANATION> and </EXPLANATION> tags. In this part, explain why you made the changes you made.
+            
+            So the output format is:
+            <RECIPE>
+            Ingredients:
+            - Ingredient 1
+            - Ingredient 2
+            ...
+            Instructions:
+            1. Step 1
+            2. Step 2
+            ...
+            </RECIPE>
+            <EXPLANATION>
+            Your explanation here
+            </EXPLANATION>
+            """
+            },
+            {
+            "role": "user", "content": prompt
+            }
+        ],
+        temperature=0,
+    )
+    if print_response:
+        # convert response to GptResponse
+        response = GptResponse(response)
+        _print_response(response)
+    return response
+
+def prompt_gpt_short(
+    prompt: str,
+    print_response: bool = True,
+    model="gpt-3.5-turbo",
+) -> GptResponse:
+    response = openai.ChatCompletion.create(
+    model=model,
+    messages = [
+        {
+        "role": "system", "content": """
+        You are a recipe improvement assistant.
+        You will be given 3 things:
+        1. A recipe
+        2. A set of rules that it has already fulfilled.
+        3. A set of rules that it has not fulfilled yet.
+
+        The rules will be of following shape: frozenset({{'word1', 'word2', ...}}) -> This means that the words word1, word2, ... should be present somewhere in the recipe. 
+        
+        You'll write two parts:
+        1. The first part is the Ingredients and Instructions. First write the ingredients in a list labelled Ingredients:
+        Then in the label Instructions: write the new recipe by fulfilling all of the new rules, while changing as little as possible from the original recipe. Write the instructions as a numbered list.
+        Wrap this part between <RECIPE> and </RECIPE> tags.
+        2. The second part is the explanation part. In here write all the changes you have made and why made them. Wrap this part between <EXPLANATION> and </EXPLANATION> tags.
+        
+        So the output format is:
+        <RECIPE>
+        Ingredients:
+        - Ingredient 1
+        - Ingredient 2
+        ...
+        Instructions:
+        1. Step 1
+        2. Step 2
+        ...
+        </RECIPE>
+        <EXPLANATION>
+        Your explanation here
+        </EXPLANATION>
+        """
+        },
+        {
+        "role": "user", "content": prompt
+        }
+    ],
+    temperature=0,
+    )
+    if print_response:
+        # convert response to GptResponse
+        response = GptResponse(response)
+        _print_response(response)
+    return response
+
+def prompt_gpt_short_extra_info(
+    prompt: str,
+    print_response: bool = True,
+    model="gpt-3.5-turbo",
+) -> GptResponse:
+    response = openai.ChatCompletion.create(
+    model=model,
+    messages = [
+        {
+        "role": "system", "content": """
+        You are a recipe improvement assistant.
+        You will be given 3 things:
+        1. A recipe
+        2. A set of rules that it has already fulfilled.
+        3. A set of rules that it has not fulfilled yet.
+
+        The rules will be of following shape: frozenset({{'word1', 'word2', ...}}) -> This means that the words word1, word2, ... should be present somewhere in the recipe. Note that, these words aren't dependent on each other. Thus they words don't have to appear in the same sentence, or in the same order that they are given. It just means they have to appear at least once somewhere in the recipe.
+        
+        You'll write two parts:
+        1. The first part is the Ingredients and Instructions. First write the ingredients in a list labelled Ingredients:
+        Then in the label Instructions: write the new recipe by fulfilling all of the new rules, while changing as little as possible from the original recipe. Write the instructions as a numbered list.
+        Wrap this part between <RECIPE> and </RECIPE> tags.
+        2. The second part is the explanation part. In here write all the changes you have made and why made them. Wrap this part between <EXPLANATION> and </EXPLANATION> tags.
+        
+        So the output format is:
+        <RECIPE>
+        Ingredients:
+        - Ingredient 1
+        - Ingredient 2
+        ...
+        Instructions:
+        1. Step 1
+        2. Step 2
+        ...
+        </RECIPE>
+        <EXPLANATION>
+        Your explanation here
+        </EXPLANATION>
+        """
+        },
+        {
+        "role": "user", "content": prompt
+        }
+    ],
+    temperature=0,
+    )
+    if print_response:
+        # convert response to GptResponse
+        response = GptResponse(response)
+        _print_response(response)
+    return response
+
+def prompt_few_shot(
+    prompt: str,
+    print_response: bool = True,
+    model="gpt-3.5-turbo",
+) -> GptResponse:
+    # Read the examples from few_shots_gend_by_gp4.txt
+    with open('./few_shots_gend_by_gpt4.txt', 'r') as f:
+        examples = f.read()
+        response = openai.ChatCompletion.create(
+        model=model,
+        messages = [
+            {
+            "role": "user", "content": f"""
+            {examples}
+            {prompt}
+            """
+            }
+        ],
+        temperature=0,
+        )
+        if print_response:
+            # convert response to GptResponse
+            response = GptResponse(response)
+            _print_response(response)
+        return response
+        
 
 def calculate_similarity(
     original_recipe: str,
@@ -363,10 +575,33 @@ def _print_response(response: GptResponse|str) -> None:
         print(explanation)
         print()
 
+def _return_response_str(response: GptResponse|str) -> str:
+    # if type is GptResponse
+    if type(response) == GptResponse:
+        # Grab the first choice
+        response_str = response.choices[0].message.content
+    elif type(response) == str:
+        response_str = response
+    else:
+        print(type(response))
+        raise TypeError(f'response should be of type GptResponse or str, but got {type(response)}')
+    str_to_return = ""
+    new_recipe = response_str.split('<RECIPE>')[1].split('</RECIPE>')[0]
+    str_to_return += 'New recipe:\n'
+    str_to_return += new_recipe
+    str_to_return += '\n'
+    str_to_return += '________\n'
+    str_to_return += 'Explanation:\n'
+    explanation = response_str.split('<EXPLANATION>')[1].split('</EXPLANATION>')[0]
+    str_to_return += explanation
+    str_to_return += '\n'
+    return str_to_return
+
 def complete_pipeline(
         recipe_row: pd.Series,
         extracted_rules: pd.DataFrame,
-        prompt_function: callable = prompt_gpt_2
+        prompt_function: callable = prompt_gpt_2,
+        model="gpt-3.5-turbo"
 ) -> Dict[str, any]:
     
     """
@@ -388,20 +623,20 @@ def complete_pipeline(
 
     # Generate the prompt
     fulfilled_rules, suggestions = extract_rules(recipe_row['preprocessed'], extracted_rules)
-    prompt = create_prompt(
-        recipe_row['title'],
-        recipe_row['directions'],
-        fulfilled_rules,
-        suggestions
-    )
+    # if the prompt function is prompt_few_shot, we need to create a different prompt
+    if prompt_function == prompt_few_shot:
+        prompt = create_fewshot_prompt(recipe_row['title'], recipe_row['directions'], fulfilled_rules, suggestions)
+    else:
+        prompt = create_prompt(recipe_row['title'], recipe_row['directions'], fulfilled_rules, suggestions)
     # Send the prompt to GPT
-    resp = prompt_gpt_2(prompt=prompt, print_response=False)
+    resp = prompt_function(prompt=prompt, print_response=False, model=model)
     # Calculate the similarity
     original_in_new, new_in_original = calculate_similarity(recipe_row['preprocessed'], resp)
     return({
         'index': recipe_row.name,
         'original_recipe': recipe_row['directions'],
         'new_recipe': resp.choices[0].message.content,
+        'rules': suggestions,
         'original_in_new': original_in_new,
         'new_in_original': new_in_original
     })
@@ -409,7 +644,8 @@ def complete_pipeline(
 def pipeline_chunk(
         chunk: pd.DataFrame,
         extracted_rules: pd.DataFrame,
-        prompt_function: callable = prompt_gpt_2
+        prompt_function: callable = prompt_gpt_2,
+        model="gpt-3.5-turbo"
 ) -> List[Dict[str, any]]:
     """
         This function applies the complete_pipeline function to a chunk of recipes. Check the documentation of complete_pipeline for more details.
@@ -421,4 +657,4 @@ def pipeline_chunk(
         Output:
             - A list of dictionaries, each dictionary is the output of the complete_pipeline function.
     """
-    return [complete_pipeline(row, extracted_rules, prompt_function) for _, row in chunk.iterrows()]
+    return [complete_pipeline(row, extracted_rules, prompt_function, model) for _, row in chunk.iterrows()]
