@@ -3,6 +3,7 @@ from typing import List, Tuple, Set, FrozenSet, Generator, Any, Dict, Literal
 import pandas as pd
 import itertools
 import openai
+import os
 from gensim.parsing.preprocessing import preprocess_string
 
 class Choice:
@@ -31,8 +32,26 @@ class GptResponse:
         self.choices = [Choice(choice) for choice in response['choices']]
         self.usage = response['usage']
 
+openai.api_key = os.environ['OPENAI_APIKEY']
 
-openai.api_key = "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"
+def load_required_data_v2(DATA_DIR):
+    print('Starting to load rule data')
+    # import rules csv
+    ingredient_rules = pd.read_csv(f'{DATA_DIR}/ingredient_rules.csv')
+    rules = pd.read_csv(f'{DATA_DIR}/rules_recipe_scale.csv')
+    # From the antecedents column, convert from frozenset to list of strings
+    rules['antecedents'] = rules['antecedents'].apply(lambda x: list(eval(x)))
+    ingredient_rules['antecedents'] = ingredient_rules['antecedents'].apply(lambda x: list(eval(x)))
+    print('Rule data loaded...')
+    print()
+    print('Starting rule extraction...')
+    print('\t -> Starting to sort rules by lift')
+    # Sort by lift and grab the first 400 rules
+    extracted_rules = rules.sort_values('lift', ascending=False)
+    extracted_ingredient_rules = ingredient_rules.sort_values('lift', ascending=False)
+    print('\t -> Done sorting rules...')
+    print('_'*30)
+    return extracted_rules,extracted_ingredient_rules
 
 def load_required_data(DATA_DIR):
     print('Starting to load rule data')
@@ -96,11 +115,11 @@ def find_patterns(sample_recipe, to_be_joined):
             set_to_return.add(set_to_add)
     return set_to_return
 
-
 def extract_rules(
     recipe: List[str],
     rules: pd.DataFrame,
-    rule_count = 3
+    rule_count = 3,
+    metric='lift'
 ) -> Set[FrozenSet[str]]:
     """
         This function takes as input a recipe, then iterates over the rules row by row,
@@ -141,7 +160,7 @@ def extract_rules(
                 # Add the rule to the list
                 rules_to_return.add(frozenset(row['antecedents']))
                 # Add the suggestion to the dictionary
-                suggestions_to_return[frozenset(row['antecedents'])] = (row['consequents'], row['lift'])
+                suggestions_to_return[frozenset(row['antecedents'])] = (row['consequents'], row[metric])
                 already_suggested.add(frozenset(row['consequents']))
                 # print(f"rules_to_return: {rules_to_return}")
             # print('______')
@@ -167,7 +186,9 @@ def create_prompt(title, directions, fulfilled_rules, suggestions):
     # 1. index0
     # 2. index1
     # ...
-    directions = '\n'.join([f'{i+1}. {x}' for i, x in enumerate(directions)])
+    # if type of directions is list:
+    if type(directions) == list:
+        directions = '\n'.join([f'{i+1}. {x}' for i, x in enumerate(directions)])
     advices = [x[0] for x in suggestions.values()]
     return f"""
     Recipe:
@@ -192,6 +213,29 @@ def create_fewshot_prompt(title, directions, fulfilled_rules, suggestions):
     </RULES TO FULFILL>
 
     Answer:
+    """
+
+def create_prompt_with_ingredients(
+    title,
+    directions,
+    fulfilled_rules,
+    suggestions,
+    fulfilled_ingredients,
+    suggestions_ingredients
+):
+    advices = [x[0] for x in suggestions.values()]
+    advices_ingredients = [x[0] for x in suggestions_ingredients.values()]
+    return f"""
+    Recipe:
+    {directions}
+    Some of the fulfilled rules for the steps are:
+    {fulfilled_rules}
+    The new rules to be fulfilled for the steps are:
+    {advices}
+    Some of the fulfilled rules for the ingredients are:
+    {fulfilled_ingredients}
+    The new rules to be fulfilled for the ingredients are:
+    {advices_ingredients}
     """
 
 def prompt_gpt(
@@ -523,6 +567,60 @@ def prompt_few_shot(
             _print_response(response)
         return response
         
+def prompt_gpt_with_ingredients(
+    prompt: str,
+    print_response: bool = True,
+    model="gpt-3.5-turbo",
+) -> GptResponse:
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages = [
+            {
+            "role": "system", "content": """
+            You are a recipe improvement assistant.
+            You will be given 5 things:
+            1. A recipe
+            2. For the Instructions: A set of rules that it has already fulfilled.
+            3. For the Instructions: A set of rules that it has not fulfilled yet.
+            4. For the Ingredients: A set of rules that it has already fulfilled.
+            5. For the Ingredients: A set of rules that it has not fulfilled yet.
+
+            The rules will be of following shape: frozenset({{'word1', 'word2', ...}}) -> This means that the words word1, word2, ... should be present somewhere in the recipe. Note that, these words aren't dependent on each other. Thus they words don't have to appear in the same sentence, or in the same order that they are given. It just means they have to appear at least once somewhere in the directions for the rules of the directions and in ingredients for the rules for ingredients.
+            
+            You'll write two parts:
+            1. The first part is the Ingredients and Instructions. First write the ingredients in a list labelled Ingredients:
+            Then in the label Instructions: write the new recipe as a numbered list. For both the ingredients and instructions, make sure to fulfill all of the new rules, while changing as little as possible from the original recipe.
+            Make sure that each ingredient is used in the instructions. And all the ingredients are listed in the ingredients section.
+            Wrap this part between <RECIPE> and </RECIPE> tags.
+            2. The second part is the explanation part. In here write all the changes you have made and why made them. Wrap this part between <EXPLANATION> and </EXPLANATION> tags.
+            
+            So the output format is:
+            <RECIPE>
+            Ingredients:
+            - Ingredient 1
+            - Ingredient 2
+            ...
+            Instructions:
+            1. Step 1
+            2. Step 2
+            ...
+            </RECIPE>
+            <EXPLANATION>
+            Your explanation here
+            </EXPLANATION>
+            """
+            },
+            {
+            "role": "user", "content": prompt
+            }
+        ],
+        temperature=0,
+    )
+    if print_response:
+        # convert response to GptResponse
+        response = GptResponse(response)
+        _print_response(response)
+    return response
 
 def calculate_similarity(
     original_recipe: str,
@@ -641,6 +739,55 @@ def complete_pipeline(
         'new_in_original': new_in_original
     })
 
+def complete_pipeline_2(
+        recipe_row: pd.Series,
+        extracted_rules: pd.DataFrame,
+        extracted_ingredient_rules: pd.DataFrame,
+        prompt_function: callable = prompt_gpt_2,
+        model="gpt-3.5-turbo"
+) -> Dict[str, any]:
+    
+    """
+        This function represents the whole pipeline.
+
+        Inputs:
+            - recipe_row: A pandas dataframe row with a column called 'preprocessed' which is a list of tokens. Note: we assume this preprocessed column is created using gensim preprocess_string.
+            - extracted_rules: A pandas dataframe with columns ['antecedents', 'consequents', 'confidence', 'lift'] sorted by lift.
+            - extracted_ingredient_rules: A pandas dataframe with columns ['antecedents', 'consequents', 'confidence', 'lift'] sorted by lift.
+            - prompt_function: The function to be used to send the prompt to GPT-3.5. The default is prompt_gpt_2.
+        
+        Output:
+            - A dictionary with the following keys:
+                - index: The index of the recipe in the dataframe.
+                - original_recipe: The original recipe.
+                - new_recipe: The new recipe generated by GPT-3.5.
+                - original_in_new: The percentage of tokens in the original recipe that are in the new recipe.
+                - new_in_original: The percentage of tokens in the new recipe that are in the original recipe.
+    """
+
+    # Generate the prompt
+    fulfilled_rules, suggestions = extract_rules(recipe_row['preprocessed'], extracted_rules)
+    # if the prompt function is prompt_few_shot, we need to create a different prompt
+    if prompt_function == prompt_few_shot:
+        prompt = create_fewshot_prompt(recipe_row['title'], recipe_row['directions'], fulfilled_rules, suggestions)
+    elif prompt_function == prompt_gpt_with_ingredients:
+        fulfilled_ingredients, suggestions_ingredients = extract_rules(recipe_row['NER'], extracted_ingredient_rules)
+        prompt = create_prompt_with_ingredients(recipe_row['title'], recipe_row['directions'], fulfilled_rules, suggestions, fulfilled_ingredients, suggestions_ingredients)
+    else:
+        prompt = create_prompt(recipe_row['title'], recipe_row['directions'], fulfilled_rules, suggestions)
+    # Send the prompt to GPT
+    resp = prompt_function(prompt=prompt, print_response=False, model=model)
+    # Calculate the similarity
+    original_in_new, new_in_original = calculate_similarity(recipe_row['preprocessed'], resp)
+    return({
+        'index': recipe_row.name,
+        'original_recipe': recipe_row['directions'],
+        'new_recipe': resp.choices[0].message.content,
+        'rules': suggestions,
+        'original_in_new': original_in_new,
+        'new_in_original': new_in_original
+    })
+
 def pipeline_chunk(
         chunk: pd.DataFrame,
         extracted_rules: pd.DataFrame,
@@ -658,3 +805,21 @@ def pipeline_chunk(
             - A list of dictionaries, each dictionary is the output of the complete_pipeline function.
     """
     return [complete_pipeline(row, extracted_rules, prompt_function, model) for _, row in chunk.iterrows()]
+
+def pipeline_chunk_2(
+        chunk: pd.DataFrame,
+        extracted_rules: pd.DataFrame,
+        prompt_function: callable = prompt_gpt_2,
+        model="gpt-3.5-turbo"
+) -> List[Dict[str, any]]:
+    """
+        This function applies the complete_pipeline function to a chunk of recipes. Check the documentation of complete_pipeline for more details.
+
+        Input:
+            - chunk: A pandas dataframe with a column called 'preprocessed' which is a list of tokens. Note: we assume this preprocessed column is created using gensim preprocess_string.
+            - extracted_rules: A pandas dataframe with columns ['antecedents', 'consequents', 'confidence', 'lift'] sorted by lift.
+        
+        Output:
+            - A list of dictionaries, each dictionary is the output of the complete_pipeline function.
+    """
+    return [complete_pipeline_2(row, extracted_rules, prompt_function, model) for _, row in chunk.iterrows()]

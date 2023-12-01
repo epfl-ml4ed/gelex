@@ -1,0 +1,12 @@
+.selected {
+    background-color: #f0f5ff; /* Light blue background, similar to Ant Design's primary color */
+    border: 1px solid #1890ff; /* Ant Design primary color */
+    border-radius: 4px;
+    padding: 2px;
+}
+
+@keyframes fadeBack {
+    from { background-color: #ffa39e; } /* Light red */
+    to { background-color: transparent; }
+}
+
