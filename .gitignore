@@ -1,2 +1,6 @@
 dataset/full_dataset.csv
 dataset/
+venv/
+parent/
+.idea/
+__pycache__/
