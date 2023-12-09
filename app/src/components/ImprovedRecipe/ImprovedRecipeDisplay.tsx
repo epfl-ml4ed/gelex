@@ -70,7 +70,7 @@ export const ImprovedRecipeDisplay: React.FC<ImprovedRecipeDisplayProps> = ({ im
             <Popover
                 content={
                     <div>
-                        <p>Explanation for this sentence</p>
+                        <p>Explanation for {sentence}</p>
                         <Button onClick={() => handleAccept(index)}>Accept</Button>
                         <Button onClick={() => handleDecline(index)}>Decline</Button>
                     </div>

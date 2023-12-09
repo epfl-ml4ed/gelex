@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Form, Popover, Button } from 'antd';
 import './ImprovedRecipeDisplay.css';
+import { ImprovedRecipe } from '../../types';
 
 type ImprovedRecipeDisplayProps = {
-    recipeText: string;
-    correctWords: Set<string>; // Set of correct words
+    improvedRecipe: ImprovedRecipe;
 };
 
-export const ImprovedRecipeDisplay: React.FC<ImprovedRecipeDisplayProps> = ({ recipeText, correctWords }) => {
+export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps> = ({ improvedRecipe }) => {
     const [selectedWords, setSelectedWords] = useState<Map<number, string>>(new Map());
     const [showPopover, setShowPopover] = useState<number | null>(null);
-
+    
+    const { recipeText, correctWords } = improvedRecipe;
+    console.log(recipeText);
     const toggleWordSelection = (word: string, index: number) => {
         if (correctWords.has(word)) {
             setSelectedWords(new Map(selectedWords.set(index, 'correct')));
@@ -80,7 +82,7 @@ export const ImprovedRecipeDisplay: React.FC<ImprovedRecipeDisplayProps> = ({ re
 
     return (
         <Form layout="vertical">
-            <Form.Item label="Improved Recipe">
+            <Form.Item>
                 <div style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
                     {words}
                 </div>
@@ -89,4 +91,4 @@ export const ImprovedRecipeDisplay: React.FC<ImprovedRecipeDisplayProps> = ({ re
     );
 };
 
-export default ImprovedRecipeDisplay;
+export default ImprovedRecipeDisplayWordScale;
