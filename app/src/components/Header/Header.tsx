@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Menu, Switch, Row, Col, theme } from 'antd';
-import { BulbOutlined, BulbFilled } from '@ant-design/icons';
+import { Menu, Switch, theme, Popover } from 'antd';
+import { BulbOutlined, BulbFilled, FormOutlined, UserOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import './Header.css';
 
@@ -24,32 +24,32 @@ export const Header: React.FC<HeaderProps> = ({ onTabChange, setDarkMode }) => {
 
     const darkModeToggle = useMemo(() => {
         return (
-            <Switch
-                checkedChildren={<BulbFilled />}
-                unCheckedChildren={<BulbOutlined />}
-                checked={isDarkMode}
-                onChange={() => {
-                    // Save to cookie
-                    document.cookie = `darkMode=${!isDarkMode}`;
-                    setDarkMode(!isDarkMode);
-                }}
-                style={{ marginTop: 16 }}
-            />
+            <div id="header-tabs-switch">
+                <Popover
+                    content={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                >
+                    <Switch
+                        checkedChildren={<BulbOutlined />}
+                        unCheckedChildren={<BulbFilled />}
+                        checked={!isDarkMode}
+                        onChange={() => {
+                            // Save to cookie
+                            document.cookie = `darkMode=${!isDarkMode}`;
+                            setDarkMode(!isDarkMode);
+                        }}
+                    />
+                </Popover>
+            </div>
         );
     }, [isDarkMode, setDarkMode]);
 
     return (
-        <Row align="middle" justify="space-between">
-            <Col xs={24} sm={18} md={20} lg={21} xl={22}>
-                <Menu className='header-tabs' onClick={handleClick} selectedKeys={[current]} mode="horizontal">
-                    <Menu.Item key="about">About Us</Menu.Item>
-                    <Menu.Item key="app">The App Itself</Menu.Item>
-                </Menu>
-            </Col>
-            <Col xs={24} sm={6} md={4} lg={3} xl={2}>
-                {darkModeToggle}
-            </Col>
-        </Row>
+        <Menu className='header-tabs' onClick={handleClick} selectedKeys={[current]} mode="horizontal">
+            <Menu.Item key="about" id="header-tabs-about" icon={<UserOutlined />}>About Us</Menu.Item>
+            <Menu.Item key="app" id="header-tabs-app" icon={<FormOutlined />}>Recipe Improver</Menu.Item>
+            {darkModeToggle}
+
+        </Menu>
     );
 };
 

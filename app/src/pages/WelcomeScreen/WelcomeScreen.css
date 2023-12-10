@@ -1,0 +1,102 @@
+/* WelcomeScreen.css */
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap'); /* Example pixelated font */
+
+:root {
+  --text-color-light: #575268; /* Catppuccin text color for light mode */
+  --text-color-dark: #cdd6f4; /* Catppuccin text color for dark mode */
+  --background-color-light: rgba(255, 255, 255, 0.8); /* Light mode semi-transparent background */
+  --background-color-dark: rgba(20, 20, 20, 0.8); /* Dark mode semi-transparent background */
+}
+
+[data-theme='dark'] {
+  --text-color: var(--text-color-dark);
+  --background-color: var(--background-color-dark);
+}
+
+[data-theme='light'] {
+  --text-color: var(--text-color-light);
+  --background-color: var(--background-color-light);
+}
+
+.welcome-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: 'Press Start 2P', cursive;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+.welcome-screen .ant-list-header {
+  color: var(--text-color);
+  text-align: center;
+  font-size: 1.5em;
+}
+
+.menu-item-button {
+  color: var(--text-color);
+  font-size: 1em;
+  padding: 0.5em;
+  width: 100%;
+  text-align: left;
+  font-family: 'Press Start 2P', cursive;
+}
+
+.menu-item-button:hover {
+  color: var(--text-color);
+  text-decoration: underline; /* Simple hover effect */
+}
+
+
+.menu-list{
+  font-family: 'Press Start 2P', cursive;
+}
+
+/* ... Animation keyframes ... */
+/* Slide In (From Top to Down) */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%); /* Start from above the viewport */
+  }
+  to {
+    transform: translateY(0); /* End at current position */
+  }
+}
+
+/* Slide Out (From Down to Top) */
+@keyframes slideUp {
+  from {
+    transform: translateY(0); /* Start from current position */
+  }
+  to {
+    transform: translateY(-100%); /* End above the viewport */
+  }
+}
+
+/* Adjust the animation classes to use the new keyframes */
+.welcome-screen.menu-enter {
+  animation: slideDown 0.5s forwards; /* Slide in from top to down */
+}
+
+.welcome-screen.menu-exit {
+  animation: slideUp 0.5s forwards; /* Slide out from down to top */
+}
+
+.menu-info-text{
+  position: absolute;
+  font-family: 'Press Start 2P', cursive;
+  width: 100%;
+  top: 0;
+  left: 0;
+  text-align: center;
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+  

@@ -10,3 +10,81 @@
     to { background-color: transparent; }
 }
 
+.like-dislike-container {
+    display: flex;
+    justify-content: space-between;
+}
+.dark-mode .like-button .anticon,
+.dark-mode .dislike-button .anticon {
+    color: #181926; /* Macchiato text color for icons in dark mode */
+}
+
+/* Light mode styles (Catppuccin Latte) */
+.light-mode .like-button .anticon,
+.light-mode .dislike-button .anticon {
+    color: #4C4F69; /* Latte text color for icons in light mode */
+}
+
+/* Dark mode styles (Catppuccin Macchiato) */
+.dark-mode .like-button {
+    background-color: #a6da95; /* Adjust with Macchiato green */
+}
+
+.dark-mode .dislike-button {
+    background-color: #F28FAD; /* Adjust with Macchiato red */
+}
+
+/* Light mode styles (Catppuccin Latte) */
+.light-mode .like-button {
+    background-color: #B8E1DD; /* Adjust with Latte green */
+}
+
+.light-mode .dislike-button {
+    background-color: #EBA0AC; /* Adjust with Latte red */
+}
+
+.like-button, .dislike-button {
+    flex: 1;
+    margin: 0 5px;
+    border: none;
+    transition: transform 0.3s ease;
+}
+
+.like-button:hover, .dislike-button:hover {
+    transform: scale(1.1);
+}
+
+/* ImprovedRecipeDisplay.css */
+
+/* ... existing styles ... */
+
+/* Animation for the congratulatory text */
+@keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Animation for the submit button */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .congrats-text-enter {
+    animation: fadeInUp 0.5s ease forwards;
+  }
+  
+  .submit-button-enter {
+    animation: fadeIn 0.5s ease forwards;
+  }
+  

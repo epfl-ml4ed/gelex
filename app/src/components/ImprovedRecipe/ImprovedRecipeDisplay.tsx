@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Form, Popover, Button } from 'antd';
 import './ImprovedRecipeDisplay.css'
 import { ImprovedRecipe } from '../../types';
@@ -13,7 +13,7 @@ export const ImprovedRecipeDisplay: React.FC<ImprovedRecipeDisplayProps> = ({ im
 
     const { recipeText, correctSentences } = improvedRecipe || {};
     // Strip start and end whitespace from sentence and check if it is in correctSentences
-    const isSentenceCorrect = (sentence: string) => correctSentences.has(sentence.trim());
+    const isSentenceCorrect = (sentence: string) => correctSentences?.has(sentence.trim());
 
     const sentences = recipeText.match(/[^.!?]+[.!?]+/g) || [];
 
