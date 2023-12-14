@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Form, Popover, Button, theme, Typography } from 'antd';
+import { Form, Popover, Button, Typography } from 'antd';
 import './ImprovedRecipeDisplay.css';
 import { BackendUserResult, ImprovedRecipe } from '../../types';
 import { DislikeOutlined, LikeOutlined } from '@ant-design/icons';
@@ -15,8 +15,6 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
     const [showPopover, setShowPopover] = useState<number | null>(null);
     const [allWordsSelected, setAllWordsSelected] = useState<boolean>(false);
     // Read dark mode from config
-    const { theme: themeToken } = theme.useToken();
-    const isDarkMode = themeToken.id === 1;
     const { recipeText, annotations } = improvedRecipe;
     
 

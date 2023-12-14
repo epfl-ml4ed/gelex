@@ -59,13 +59,11 @@ export const MainPage: React.FC<MainPageProps> = ({api}) => {
             setImprovedRecipe({
                 recipeText: dataBackEnd.example_recipe,
                 annotations: dataBackEnd.annotations,
-                ingSeperated: false,
             })
             setimprovedRecipeLoading(false);
             setStep(2);
             console.log('Annotations: ', data.annotations);
             console.log('Recipe: ', data.example_recipe);
-            console.log('Ing_Sep: ', data.ing_seperated);
             api.success({
                 message: 'Your new recipe is here!',
                 description: 'Can you identify the changes? Click on the words you think are new!',
