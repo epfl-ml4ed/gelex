@@ -6,6 +6,7 @@ import os
 import pandas as pd
 from dataclasses import dataclass
 from typing import List, Tuple, Set, FrozenSet, Generator, Any, Dict, Literal
+from gensim.parsing.preprocessing import preprocess_string
 
 @dataclass
 class PipelineOutput:
@@ -117,7 +118,7 @@ def prompt_gpt(
             {
             "role": "system", "content": """
             You are a recipe improvement assistant. The improvement will be done ONLY in the scope of rules.
-            You will be givzen a recipe and a set of rules that it has already fulfilled. Note that this will just be a subset of all the rules that the recipe fulfills.
+            You will be given a recipe and a set of rules that it has already fulfilled. Note that this will just be a subset of all the rules that the recipe fulfills.
             The rules will be of following shape: frozenset({{'word1', 'word2', ...}}) -> This means that the words word1, word2, ... should be present somewhere in the recipe. Note that, these words aren't dependent on each other. Thus they don't have to appear in the same sentence, or in the same order that they are given. It just means they have to appear at least once somewhere in the recipe.
             The user will also give you some new set of rules that it has not fulfilled yet.
             
@@ -253,3 +254,41 @@ def complete_pipeline(
         fulfilled_rules=fulfilled_rules,
         rules=suggestions
     )
+
+
+
+def get_fullfilled_percentage(response, suggestions: Dict[str, Tuple[frozenset, int]]):
+    """
+        This function takes as input the response from GPT and the suggestions, and returns the percentage of suggestions that were fulfilled.
+
+        Input:
+            - response: The response from GPT, type: GptResponse
+            - suggestions: The suggestions to be fulfilled, type: Dict[str, Tuple[frozenset, int]]
+        
+        Output:
+            - A tuple of the form (num_fullfilled, num_not_fullfilled, percentage)
+    """
+
+    generated_recipe = response.choices[0].message.content
+    recipe_start = generated_recipe.find('<RECIPE>') + len('<RECIPE>')
+    recipe_end = generated_recipe.find('</RECIPE>')
+    generated_recipe_text = generated_recipe[recipe_start:recipe_end].strip()
+    num_fullfilled = 0
+    num_not_fullfilled = 0
+    # Preprocessing new recipe
+    generated_preprocessed = preprocess_string(generated_recipe_text)
+    # Iterate over all the values of suggestions(which is a dictionary)
+    # Check if the set is a subset of the generated recipe
+    # If yes, increment num_fullfilled
+    # If no, increment num_not_fullfilled
+    # Return the tuple (num_fullfilled, num_not_fullfilled, percentage)
+    for key in suggestions:
+        if eval(suggestions[key][0]).issubset(generated_preprocessed):
+            num_fullfilled += 1
+        else:
+            num_not_fullfilled += 1
+    try:
+        percentage = num_fullfilled / (num_fullfilled + num_not_fullfilled)
+    except ZeroDivisionError:
+        percentage = 0
+    return (num_fullfilled, num_not_fullfilled, percentage)

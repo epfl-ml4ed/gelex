@@ -16,6 +16,13 @@ const Main = () => {
 
   const themeColors = isDarkMode ? catppuccinColors.Mocha : catppuccinColors.Latte;
 
+  // Does the cookie userId exist?
+  // If not, generate random userId and set cookie
+  if (!document.cookie.split(';').find((cookie) => cookie.includes('userId'))) {
+    const userId = Math.random().toString(36).substring(2, 15);
+    document.cookie = `userId=${userId}`;
+  }
+
   return (
     <React.StrictMode>
       <ConfigProvider

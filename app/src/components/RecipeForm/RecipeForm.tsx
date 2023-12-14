@@ -13,6 +13,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({submitHit, currentStep, a
     const [recipe, setRecipe] = useState<string>('');
     const [improvementLevel, setImprovementLevel] = useState<number>(0);
     const [recentlyShown, setRecentlyShown] = useState<boolean>(false);
+    
     const handleSubmit = async () => {
         submitHit(recipe, improvementLevel);
     };

@@ -1,5 +1,5 @@
 export type ImprovedRecipe = {
     recipeText: string;
-    correctWords: Set<string>;
+    annotations: {[key: string]: Array<[string, number]>};
     correctSentences?: Set<string>;
 };

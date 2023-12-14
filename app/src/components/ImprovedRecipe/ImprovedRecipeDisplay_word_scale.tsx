@@ -1,25 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Form, Popover, Button, theme, Typography } from 'antd';
 import './ImprovedRecipeDisplay.css';
-import { ImprovedRecipe } from '../../types';
+import { BackendUserResult, ImprovedRecipe } from '../../types';
 import { DislikeOutlined, LikeOutlined } from '@ant-design/icons';
 import confetti from 'canvas-confetti'; // Import the library
 
 type ImprovedRecipeDisplayProps = {
     improvedRecipe: ImprovedRecipe;
+    sendUserResults: (res: BackendUserResult) => void;
 };
 
-export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps> = ({ improvedRecipe }) => {
+export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps> = ({ improvedRecipe, sendUserResults }) => {
     const [selectedWords, setSelectedWords] = useState<Map<number, string>>(new Map());
     const [showPopover, setShowPopover] = useState<number | null>(null);
     const [allWordsSelected, setAllWordsSelected] = useState<boolean>(false);
     // Read dark mode from config
     const { theme: themeToken } = theme.useToken();
     const isDarkMode = themeToken.id === 1;
-    const { recipeText, correctWords } = improvedRecipe;
+    const { recipeText, annotations } = improvedRecipe;
+    
+
+    const finishReview = () => {
+        const res: BackendUserResult = {
+            userId: document.cookie.split(';').find((cookie) => cookie.includes('userId'))?.split('=')[1],
+            improvedRecipe: recipeText,
+            selectedWords: selectedWords,
+            timestamp: new Date().toISOString(),
+        };
+        sendUserResults(res);
+    };
 
     const toggleWordSelection = (word: string, index: number) => {
-        if (correctWords.has(word)) {
+        console.log('Clicked on word: ', word, ' with index: ', index)
+        // Check if word is in annotations
+        if (annotations[word]?.some(([_, wordIndex]) => wordIndex === index)) {
             setSelectedWords(new Map(selectedWords.set(index, 'correct')));
             setShowPopover(index);
         } else {
@@ -45,12 +59,20 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
         setShowPopover(null);
     };
 
+    const annotationSize = useMemo(() => {
+        const indices = new Set();
+        Object.values(annotations).forEach(tuples => {
+            tuples.forEach(([, index]) => indices.add(index));
+        });
+        return indices.size;
+    }, [annotations]);
+
     useEffect(() => {
         // Count the current accepted + declined word count
         const acceptedWords = Array.from(selectedWords.values()).filter((status) => status === 'accepted').length;
         const declinedWords = Array.from(selectedWords.values()).filter((status) => status === 'declined').length;
         const totalWords = acceptedWords + declinedWords;
-        if (totalWords === correctWords.size && !allWordsSelected) {
+        if (totalWords === annotationSize && !allWordsSelected) {
             console.log('All words have been accepted or declined');
             setAllWordsSelected(true);
             confetti({
@@ -84,35 +106,51 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
     };
     
 
-    const words = recipeText.split(/\s+/).map((word, index) => (
-        <Popover
-            content={
-                <div>
-                    <p>Explanation for {word}</p>
-                    <div className={`like-dislike-container ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
-                        <Button className="like-button" onClick={() => handleAccept(index)}>
-                            <LikeOutlined />
-                        </Button>
-                        <Button className="dislike-button" onClick={() => handleDecline(index)}>
-                            <DislikeOutlined />
-                        </Button>
-                    </div>
-                </div>
-            }
-            title="Word Selection"
-            trigger="click"
-            visible={showPopover === index}
-            onVisibleChange={(visible) => !visible && setShowPopover(null)}
-            key={index}
-        >
-            <span
-                onClick={() => toggleWordSelection(word, index)}
-                style={{ ...getWordStyle(selectedWords.get(index)), marginRight: '5px', cursor: 'pointer' }}
-            >
-                {word}
-            </span>
-        </Popover>
-    ));
+    let wordIndex = 0; // Initialize a counter to keep track of the word index
+
+    const words = recipeText.split('\n').flatMap((line, lineIndex) => {
+        if (line.trim().length === 0) {
+            return [<br key={`br-${lineIndex}`} />];
+        }
+
+        const wordElements = line.split(/\s+/).map((word) => {
+            const currentWordIndex = wordIndex; // Store the current word index
+            wordIndex++; // Increment the wordIndex for the next word
+
+            return (
+                <Popover
+                    content={
+                        <div>
+                            <p>Explanation for {word}</p>
+                            <div className="like-dislike-container">
+                                <Button className="like-button" onClick={() => handleAccept(currentWordIndex)}>
+                                    <LikeOutlined />
+                                </Button>
+                                <Button className="dislike-button" onClick={() => handleDecline(currentWordIndex)}>
+                                    <DislikeOutlined />
+                                </Button>
+                            </div>
+                        </div>
+                    }
+                    title="Word Selection"
+                    trigger="click"
+                    visible={showPopover === currentWordIndex}
+                    onVisibleChange={(visible) => !visible && setShowPopover(null)}
+                    key={currentWordIndex}
+                >
+                    <span
+                        onClick={() => toggleWordSelection(word, currentWordIndex)}
+                        style={{ ...getWordStyle(selectedWords.get(currentWordIndex)), marginRight: '5px', cursor: 'pointer' }}
+                    >
+                        {word}{' '}
+                    </span>
+                </Popover>
+            );
+        });
+
+        // Add a line break after each line
+        return [...wordElements, <br key={`br-${lineIndex}`} />];
+    });
 
     // Animation classes added to the elements
     const submitButtonClass = allWordsSelected ? "submit-button-enter" : "";
@@ -129,7 +167,7 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
                 <Typography.Text strong className={congratsClass}>
                     Congratulations! You found all words!
                 </Typography.Text>
-                <Button type="primary" className={submitButtonClass}>
+                <Button type="primary" className={submitButtonClass} onClick={finishReview}>
                     Submit your results!
                 </Button>
             </Form.Item>

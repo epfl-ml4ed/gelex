@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Col, Layout, Row, notification, theme  } from 'antd';
+import { Col, Layout, Row, notification, theme  } from 'antd';
 const { Content } = Layout;
 import './App.css';
 import { MainPage } from './pages';
 import WelcomeScreen from './pages/WelcomeScreen/WelcomeScreen';
-import { ArrowLeftOutlined } from '@ant-design/icons';
 
 
 type AppProps = {

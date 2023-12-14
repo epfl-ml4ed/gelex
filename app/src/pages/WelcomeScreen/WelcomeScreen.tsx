@@ -1,6 +1,6 @@
 import React from 'react';
 import { List, Button, Typography } from 'antd';
-import { ArrowUpOutlined, CoffeeOutlined, InfoCircleOutlined, SettingOutlined, SmileOutlined } from '@ant-design/icons';
+import { ArrowUpOutlined, CoffeeOutlined, InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import './WelcomeScreen.css';
 
 type WelcomeScreenProps = {
