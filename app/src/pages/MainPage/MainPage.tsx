@@ -1,23 +1,29 @@
-import { Card, Col, Empty, Row, Space } from "antd"
+import { Card, Col, Empty, Popover, Row, Space } from "antd"
 import { Guider, ImprovedRecipeDisplayWordScale, RecipeForm } from "../../components"
 import { useState } from "react";
 import { BackendInput, ImprovedRecipe, BackendResponse, BackendUserResult } from "../../types";
 import { NotificationInstance } from "antd/es/notification/interface";
+import { BulbOutlined, QuestionOutlined } from "@ant-design/icons";
 
 type MainPageProps = {
     api: NotificationInstance
+    setActivePage: (page: string) => void;
 }
 
 
-const backendUrl = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com/'
+const backendUrl = 'http://127.0.0.1:8000'
 
-export const MainPage: React.FC<MainPageProps> = ({api}) => {
+export const MainPage: React.FC<MainPageProps> = ({api, setActivePage}) => {
 
     const [currentStep, setStep] = useState(0);
     const [originalRecipe, setOriginalRecipe] = useState<string>('');
     const [improvementLevel, setImprovementLevel] = useState<number>(0);
     const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>(undefined);
     const [improvedRecipeLoading, setimprovedRecipeLoading] = useState(false);
+
+    const [revealExtraWord, setRevealExtraWord] = useState<() => void>(() => () => {});
+    const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
+
 
 
     const submitHit = (recipe: string, improvementLevel: number) => {
@@ -42,6 +48,7 @@ export const MainPage: React.FC<MainPageProps> = ({api}) => {
         // The backend will return a new recipe
         fetch(`${backendUrl}/example`, {
             method: 'POST',
+            mode: 'cors',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -87,8 +94,8 @@ export const MainPage: React.FC<MainPageProps> = ({api}) => {
         results.originalRecipe = originalRecipe;
         results.improvementLevel = improvementLevel;
         console.log('Submitting results', results);
-        // Refresh the page to reset everything
-        window.location.reload();
+        // Go to results page.
+        setActivePage('result');
     }
 
     return(
@@ -101,11 +108,27 @@ export const MainPage: React.FC<MainPageProps> = ({api}) => {
                 <RecipeForm submitHit={submitHit} currentStep={currentStep} api={api}/>
             </Col>
             <Col span={12}>
-                <Card title="Improved Recipe" loading={improvedRecipeLoading}>
+                <Card 
+                title="Improved Recipe" 
+                loading={improvedRecipeLoading} 
+                actions={[
+                    <Popover
+                        content="Reveal one extra word!"
+                    >
+                        <QuestionOutlined onClick={revealExtraWord}/>
+                    </Popover>,
+                    <Popover
+                        content="Reveal all extra words!"
+                    >
+                        <BulbOutlined onClick={revealAllWords}/>
+                    </Popover>,
+                ]}>
                     {improvedRecipe && (
                     <ImprovedRecipeDisplayWordScale 
                         improvedRecipe={improvedRecipe}
                         sendUserResults={finishReview}
+                        setRevealExtraWord={setRevealExtraWord}
+                        setRevealAllWords={setRevealAllWords}
                     />
                     )}
                     {!improvedRecipe && (<Empty

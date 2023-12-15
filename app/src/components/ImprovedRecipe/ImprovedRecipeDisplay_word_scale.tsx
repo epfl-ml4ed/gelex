@@ -8,9 +8,15 @@ import confetti from 'canvas-confetti'; // Import the library
 type ImprovedRecipeDisplayProps = {
     improvedRecipe: ImprovedRecipe;
     sendUserResults: (res: BackendUserResult) => void;
+    setRevealExtraWord: (fn: () => void) => void;
+    setRevealAllWords: (fn: () => void) => void;
 };
 
-export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps> = ({ improvedRecipe, sendUserResults }) => {
+export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps> = ({ improvedRecipe, 
+    sendUserResults, 
+    setRevealExtraWord,
+    setRevealAllWords
+ }) => {
     const [selectedWords, setSelectedWords] = useState<Map<number, string>>(new Map());
     const [showPopover, setShowPopover] = useState<number | null>(null);
     const [allWordsSelected, setAllWordsSelected] = useState<boolean>(false);
@@ -57,13 +63,34 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
         setShowPopover(null);
     };
 
-    const annotationSize = useMemo(() => {
-        const indices = new Set();
+    const { indices, annotationSize } = useMemo(() => {
+        const indices = new Set<number>();
         Object.values(annotations).forEach(tuples => {
             tuples.forEach(([, index]) => indices.add(index));
         });
-        return indices.size;
+        return { indices, annotationSize: indices.size}
     }, [annotations]);
+
+    useEffect(() => {
+        setRevealExtraWord(() => () => {
+            // Find index that is in annotations but not in selectedWords
+            const index = Array.from(indices).find(index => !selectedWords.has(index));
+            if (index !== undefined) {
+                setSelectedWords(new Map(selectedWords.set(index, 'correct')));
+                setShowPopover(index);
+            }
+        });
+        setRevealAllWords(() => () => {
+            // Find ALL indices that are in annotations but not in selectedWords
+            const newSelectedWords = new Map(selectedWords);
+            indices.forEach(index => {
+                if (!selectedWords.has(index)) {
+                    newSelectedWords.set(index, 'correct');
+                }
+            });
+            setSelectedWords(newSelectedWords);
+        });
+    }, [selectedWords, indices]);
 
     useEffect(() => {
         // Count the current accepted + declined word count

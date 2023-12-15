@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Col, Layout, Row, notification, theme  } from 'antd';
 const { Content } = Layout;
 import './App.css';
-import { MainPage } from './pages';
+import { MainPage, ResultPage } from './pages';
 import WelcomeScreen from './pages/WelcomeScreen/WelcomeScreen';
 
 
@@ -48,11 +48,13 @@ const App: React.FC<AppProps> = ({setDarkMode}) => {
                     isDarkMode={isDarkMode}
                 />
                 <Content style={{ padding: '2rem 0' }}>
+                    
                     <Row>
                         <Col span={2}/>
                         <Col span={20}>
-                            {activeTab === 'app' && <MainPage api={api} />}
+                            {activeTab === 'app' && <MainPage api={api} setActivePage={handleMenuSelect}/>}
                             {activeTab === 'about' && <p>About Us content</p>}
+                            {activeTab === 'result' && <ResultPage setActivePage={handleMenuSelect} />}
                         </Col>
                         <Col span={2}/>
                     </Row>
