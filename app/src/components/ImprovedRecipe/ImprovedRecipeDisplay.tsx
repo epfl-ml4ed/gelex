@@ -12,12 +12,6 @@ type ImprovedRecipeDisplayProps = {
     setRevealAllWords: (fn: () => void) => void;
 };
 
-interface SentenceBoundary {
-    start: number;
-    end: number;
-    sentence: string;
-    sentenceIndex: number;
-}
 interface ClickableSentenceProps {
     sentence: string;
     index: number;
@@ -221,7 +215,6 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
             setShowPopover(null);
         };
 
-        let wordIndex = 0; // Tracks the index of words across all sentences
         let sentenceIndex = 0; // Tracks the index of sentences
         const wordIndexToSentenceIndex = new Map<number, number>();
         let totalSentenceCount = 0;
