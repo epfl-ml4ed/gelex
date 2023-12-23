@@ -15,7 +15,7 @@ export const Header: React.FC<HeaderProps> = ({ onTabChange, setDarkMode }) => {
     // Read dark mode from config
     const { theme: themeToken } = theme.useToken();
     const isDarkMode = themeToken.id === 1;
-    console.log(isDarkMode);
+    // console.log(isDarkMode);
 
     const handleClick: MenuProps['onClick'] = (e) => {
         setCurrent(e.key);

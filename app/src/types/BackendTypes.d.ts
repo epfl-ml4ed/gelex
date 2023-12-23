@@ -12,11 +12,18 @@ export type BackendResponse = {
     example_recipe: string,
 }
 
-export type BackendUserResult = {
-    selectedWords: Map<number, string>,
-    userId?: string,
+export type BackendUserResultDetails = {
+    selectedIndexes: Map<number, string>,
     originalRecipe?: string,
     improvedRecipe: string,
     timestamp: string,
     improvementLevel?: number,
+    sentences?: Array<string>,
+    mode: string,
+}
+
+export type BackendUserResult = {
+    user: string,
+    event: string,
+    details: BackendUserResultDetails,
 }

@@ -13,6 +13,12 @@ type AppProps = {
 const App: React.FC<AppProps> = ({setDarkMode}) => {
     const [activeTab, setActiveTab] = useState<string>('welcome'); // Set 'welcome' as initial state
     const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(true); // Set 'welcome' as initial state
+    // Does cookie for currentMode exist?
+    // Read current mode from cookie
+    const cookieCurrentMode = document.cookie.split(';').find((cookie) => cookie.includes('currentMode'))?.split('=')[1] || 'word';
+    const [currentMode, setCurrentMode] = useState<string>(cookieCurrentMode); // Set 'word' as initial state
+    // Set the cookie
+    document.cookie = `currentMode=${currentMode}`;
 
     // Read dark mode from config
     const { theme: themeToken } = theme.useToken();
@@ -46,13 +52,15 @@ const App: React.FC<AppProps> = ({setDarkMode}) => {
                     onMenuSelect={handleMenuSelect} 
                     toggleDarkMode={handleToggleDarkMode} 
                     isDarkMode={isDarkMode}
+                    currentMode={currentMode}
+                    setCurrentMode={setCurrentMode}
                 />
                 <Content style={{ padding: '2rem 0' }}>
                     
                     <Row>
                         <Col span={2}/>
                         <Col span={20}>
-                            {activeTab === 'app' && <MainPage api={api} setActivePage={handleMenuSelect}/>}
+                            {activeTab === 'app' && <MainPage api={api} setActivePage={handleMenuSelect} currentMode={currentMode}/>}
                             {activeTab === 'about' && <p>About Us content</p>}
                             {activeTab === 'result' && <ResultPage setActivePage={handleMenuSelect} />}
                         </Col>

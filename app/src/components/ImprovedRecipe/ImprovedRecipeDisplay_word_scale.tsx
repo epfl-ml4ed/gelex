@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Form, Popover, Button, Typography } from 'antd';
 import './ImprovedRecipeDisplay.css';
-import { BackendUserResult, ImprovedRecipe } from '../../types';
+import { BackendUserResultDetails, ImprovedRecipe } from '../../types';
 import { DislikeOutlined, LikeOutlined } from '@ant-design/icons';
 import confetti from 'canvas-confetti'; // Import the library
 
 type ImprovedRecipeDisplayProps = {
     improvedRecipe: ImprovedRecipe;
-    sendUserResults: (res: BackendUserResult) => void;
+    sendUserResults: (res: BackendUserResultDetails) => void;
     setRevealExtraWord: (fn: () => void) => void;
     setRevealAllWords: (fn: () => void) => void;
 };
@@ -25,17 +25,16 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
     
 
     const finishReview = () => {
-        const res: BackendUserResult = {
-            userId: document.cookie.split(';').find((cookie) => cookie.includes('userId'))?.split('=')[1],
+        const res: BackendUserResultDetails = {
             improvedRecipe: recipeText,
-            selectedWords: selectedWords,
+            selectedIndexes: selectedWords,
             timestamp: new Date().toISOString(),
+            mode: 'word',
         };
         sendUserResults(res);
     };
 
     const toggleWordSelection = (word: string, index: number) => {
-        console.log('Clicked on word: ', word, ' with index: ', index)
         // Check if word is in annotations
         if (annotations[word]?.some(([_, wordIndex]) => wordIndex === index)) {
             setSelectedWords(new Map(selectedWords.set(index, 'correct')));
@@ -98,7 +97,6 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
         const declinedWords = Array.from(selectedWords.values()).filter((status) => status === 'declined').length;
         const totalWords = acceptedWords + declinedWords;
         if (totalWords === annotationSize && !allWordsSelected) {
-            console.log('All words have been accepted or declined');
             setAllWordsSelected(true);
             confetti({
                 angle: 60,

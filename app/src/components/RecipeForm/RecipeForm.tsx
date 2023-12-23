@@ -76,7 +76,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({submitHit, currentStep, a
             </Form.Item>
             <Form.Item name="recipe" style={{height: '100%'}}>
                 <Typography.Text type="secondary">Recipe:</Typography.Text>
-                <Input.TextArea style={{height: '100%'}} className='recipe-input' value={recipe} onChange={e => setRecipe(e.target.value)} disabled={inputsDisabled}/>
+                <Input.TextArea rows={8} className='recipe-input' value={recipe} onChange={e => setRecipe(e.target.value)} disabled={inputsDisabled}/>
             </Form.Item>
         </Form>
     );
