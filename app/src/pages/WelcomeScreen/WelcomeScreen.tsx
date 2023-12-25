@@ -110,10 +110,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onMenuSelect, toggleDarkM
   useEffect(() => {
     if(!doTour) return;
     if(currentPage === 0) {
-      setTimeout(() => {
-        startTour(createFirstStep());
-        setCurrentPage(1);
-      }, 500);
+      startTour(createFirstStep());
+      setCurrentPage(1);
     }
 
   }, [startTour, doTour, currentPage, setCurrentPage]);
