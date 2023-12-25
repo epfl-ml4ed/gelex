@@ -1,6 +1,6 @@
 import { Card, Col, Empty, Popover, Row, Space } from "antd"
-import { Guider, ImprovedRecipeDisplaySentenceScale, ImprovedRecipeDisplayWordScale, RecipeForm } from "../../components"
-import { useState } from "react";
+import { Guider, IPageRef, ImprovedRecipeDisplaySentenceScale, ImprovedRecipeDisplayWordScale, RecipeForm, TourContext } from "../../components"
+import { useContext, useRef, useState } from "react";
 import { BackendInput, ImprovedRecipe, BackendResponse, BackendUserResult, BackendUserResultDetails } from "../../types";
 import { NotificationInstance } from "antd/es/notification/interface";
 import { BulbOutlined, QuestionOutlined } from "@ant-design/icons";
@@ -11,9 +11,10 @@ type MainPageProps = {
     currentMode: string;
 }
 
-const backendUrl = 'http://127.0.0.1:8000'
+const backendUrl = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com'
 
 export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMode}) => {
+    const { doTour, setCurrentPage, startTour, setDoTour } = useContext(TourContext);
 
     const [currentStep, setStep] = useState(0);
     const [originalRecipe, setOriginalRecipe] = useState<string>('');
@@ -22,13 +23,59 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
     // const savedImprovedRecipe = document.cookie.split(';').find((cookie) => cookie.includes('savedImprovedRecipe'))?.split('=')[1];
     const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>();
     const [improvedRecipeLoading, setimprovedRecipeLoading] = useState(false);
+    // Ref Map
+    const refMap: Record<string, React.RefObject<HTMLDivElement>> = {};
+    refMap['improved-recipe-wrapper'] = useRef<HTMLDivElement>(null);
+    refMap['reveal-next-change'] = useRef<HTMLDivElement>(null);
+    refMap['reveal-all-changes'] = useRef<HTMLDivElement>(null);
+    
+    const [refState, _] = useState<IPageRef[]>([{
+            title: 'Your improved recipe will be here!',
+            content: `You will be asked to find out the changes either in word-scale or sentence-scale(Remember you can always the scale from the menu!)`,
+            target: refMap['improved-recipe-wrapper'],
+            onClose: () => {
+                setCurrentPage(4);
+            }
+        },
+        {
+            title: 'Reveal the changes!',
+            content: 'Click here to reveal one of the changes!',
+            target: refMap['reveal-next-change'],
+            onClose: () => {
+                setCurrentPage(4);
+            }
+        },
+        {
+            title: 'Reavel the changes!',
+            content: 'Click here to reveal all of the changes!',
+            target: refMap['reveal-all-changes'],
+            onClose: () => {
+                setCurrentPage(4);
+            }
+        }
+    ]);
+    
 
     const [revealExtraWord, setRevealExtraWord] = useState<() => void>(() => () => {});
     const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
 
-
-
-    const submitHit = (recipe: string, improvementLevel: number) => {
+    const submitHit = (recipe: string, improvementLevel: number, fromTour?: boolean) => {
+        console.log('Submitting recipe: ', recipe, fromTour)
+        if(doTour && fromTour){
+            setImprovedRecipe({
+                recipeText: 'This is an example improved recipe. Click on the words you think are new!',
+                annotations: {
+                    'This': [['th', 0]],
+                    'an': [['an', 2]],
+                    'words': [['word', 9]],
+                },
+            })
+            setCurrentPage(3)
+            setTimeout(()=>startTour(refState),1);
+            console.log('starting Tour', refState)
+            setStep(2);
+            return;
+        }
         // Check the length of the recipe
         if (recipe.length < 25) {
             api.error({
@@ -93,6 +140,13 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
     };
 
     const finishReview = (results:BackendUserResultDetails) => {
+        if(doTour){
+            setActivePage('result');
+            setDoTour(false);
+            // Set cookieTour to true
+            document.cookie = "tour=true;max-age=31536000";
+            return;
+        }
         // Extend the results with the original recipe and improvement level
         results.originalRecipe = originalRecipe;
         results.improvementLevel = improvementLevel;
@@ -147,17 +201,18 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
             <Col span={12}>
                 <Card 
                 title="Improved Recipe" 
-                loading={improvedRecipeLoading} 
+                loading={improvedRecipeLoading}
+                ref={refMap['improved-recipe-wrapper']}
                 actions={[
                     <Popover
                         content={"Reveal one extra " + (currentMode === 'sentence' ? 'sentence' : 'word') + "!"}
                     >
-                        <QuestionOutlined onClick={revealExtraWord}/>
+                        <QuestionOutlined onClick={revealExtraWord} ref={refMap['reveal-next-change']}/>
                     </Popover>,
                     <Popover
                         content={"Reveal all " + (currentMode === 'sentence' ? 'sentences' : 'words') + "!"}
                     >
-                        <BulbOutlined onClick={revealAllWords}/>
+                        <BulbOutlined onClick={revealAllWords} ref={refMap['reveal-all-changes']}/>
                     </Popover>,
                 ]}>
                     {improvedRecipe && currentMode === 'sentence' && (

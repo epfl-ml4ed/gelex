@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Form, Popover, Button, Typography } from 'antd';
 import './ImprovedRecipeDisplay.css';
 import { BackendUserResultDetails, ImprovedRecipe } from '../../types';
 import { DislikeOutlined, LikeOutlined } from '@ant-design/icons';
 import confetti from 'canvas-confetti'; // Import the library
+import { IPageRef, TourContext } from '..';
 
 type ImprovedRecipeDisplayProps = {
     improvedRecipe: ImprovedRecipe;
@@ -22,7 +23,75 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
     const [allWordsSelected, setAllWordsSelected] = useState<boolean>(false);
     // Read dark mode from config
     const { recipeText, annotations } = improvedRecipe;
-    
+    // Ref Map
+    const refMap: Record<string, React.RefObject<HTMLDivElement>> = {};
+    refMap['all-word-wrapper'] = useRef<HTMLDivElement>(null);
+    refMap['result-wrapper'] = useRef<HTMLDivElement>(null);
+    refMap['first-word'] = useRef<HTMLDivElement>(null);
+    refMap['second-word'] = useRef<HTMLDivElement>(null);
+    refMap['third-word'] = useRef<HTMLDivElement>(null);
+    refMap['first-word-pop'] = useRef<HTMLDivElement>(null);
+    refMap['second-word-pop'] = useRef<HTMLDivElement>(null);
+    refMap['third-word-pop'] = useRef<HTMLDivElement>(null);
+    refMap['first-word-pop-like'] = useRef<HTMLDivElement>(null);
+    refMap['second-word-pop-like'] = useRef<HTMLDivElement>(null);
+    refMap['third-word-pop-like'] = useRef<HTMLDivElement>(null);
+    refMap['first-word-pop-dislike'] = useRef<HTMLDivElement>(null);
+    refMap['second-word-pop-dislike'] = useRef<HTMLDivElement>(null);
+    refMap['third-word-pop-dislike'] = useRef<HTMLDivElement>(null);
+
+    const { startTour, doTour, currentPage, setCurrentPage } = useContext(TourContext);
+
+    const createTour = () => {
+        const refs:IPageRef[] = []
+        refs.push({
+            title: 'Identifying changes',
+            content: 'To identify the changes we click on words(or sentences) that we think have been changed.',
+            target: refMap['first-word'],
+            onNext: () => {
+                refMap['first-word']?.current?.click();
+            },
+            preventClose: true,
+        });
+        refs.push({
+            title: 'Do you like it?',
+            content: 'We\'ll give you some explanation on why we implemented the change and ask you if you like it.',
+            target: refMap['first-word-pop'],
+            onNext: () => {
+                handleAccept(0)
+            },
+            preventClose: true,
+        });
+        refs.push({
+            title: 'Mark ALL the changes!',
+            content: 'You have to find all the changes and mark them all!',
+            target: refMap['all-word-wrapper'],
+            onNext: () => {
+                handleDecline(2);
+                handleAccept(9);
+                setTimeout(() => {}, 100);
+            },
+            preventClose: true,
+        });
+        refs.push({
+            title: 'Wrapping up!',
+            content: 'After you find all the changes you\'ll be able to submit your results!',
+            target: refMap['result-wrapper'],
+            onClose: () => {
+                finishReview();
+            }
+        });
+        return refs;
+    }
+
+    useEffect(() => {
+        if(!doTour) return;
+        if(currentPage === 5) return;
+        if(currentPage === 4) {
+            setCurrentPage(5);
+            startTour(createTour());
+        }
+    }, [startTour, doTour, currentPage, setCurrentPage, createTour]);
 
     const finishReview = () => {
         const res: BackendUserResultDetails = {
@@ -146,10 +215,21 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
                         <div>
                             <p>Explanation for {word}</p>
                             <div className="like-dislike-container">
-                                <Button className="like-button" onClick={() => handleAccept(currentWordIndex)}>
+                                <Button className="like-button" onClick={() => handleAccept(currentWordIndex)} ref={
+                                    (doTour && currentPage === 3 && currentWordIndex === 0 ? refMap['first-word-pop-like'] :
+                                    (doTour && currentPage === 3 && currentWordIndex === 2 ? refMap['second-word-pop-like'] :
+                                    (doTour && currentPage === 3 && currentWordIndex === 9 ? refMap['third-word-pop-like'] : undefined))
+                                )
+                                }>
                                     <LikeOutlined />
                                 </Button>
-                                <Button className="dislike-button" onClick={() => handleDecline(currentWordIndex)}>
+                                <Button className="dislike-button" onClick={() => handleDecline(currentWordIndex)}
+                                ref={
+                                    (doTour && currentPage === 3 && currentWordIndex === 0 ? refMap['first-word-pop-dislike'] :
+                                    (doTour && currentPage === 3 && currentWordIndex === 2 ? refMap['second-word-pop-dislike'] :
+                                    (doTour && currentPage === 3 && currentWordIndex === 9 ? refMap['third-word-pop-dislike'] : undefined))
+                                )
+                                }>
                                     <DislikeOutlined />
                                 </Button>
                             </div>
@@ -160,10 +240,20 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
                     visible={showPopover === currentWordIndex}
                     onVisibleChange={(visible) => !visible && setShowPopover(null)}
                     key={currentWordIndex}
+                    ref={
+                        (doTour && currentPage === 3 && currentWordIndex === 0 ? refMap['first-word-pop'] :
+                        (doTour && currentPage === 3 && currentWordIndex === 2 ? refMap['second-word-pop'] :
+                        (doTour && currentPage === 3 && currentWordIndex === 9 ? refMap['third-word-pop'] : undefined)))
+                    }
                 >
                     <span
                         onClick={() => toggleWordSelection(word, currentWordIndex)}
                         style={{ ...getWordStyle(selectedWords.get(currentWordIndex)), marginRight: '5px', cursor: 'pointer' }}
+                        ref={
+                            doTour && currentPage === 3 && currentWordIndex === 0 ? refMap['first-word'] :
+                            (doTour && currentPage === 3 && currentWordIndex === 2 ? refMap['second-word'] :
+                            (doTour && currentPage === 3 && currentWordIndex === 9 ? refMap['third-word'] : undefined))
+                        }
                     >
                         {word}{' '}
                     </span>
@@ -180,17 +270,19 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
     const congratsClass = allWordsSelected ? "congrats-text-enter" : "";
     return (
         <Form layout="vertical">
-            <Form.Item>
-                <div style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
-                    {words}
-                </div>
-            </Form.Item>
+            <span ref={refMap['all-word-wrapper']}>
+                <Form.Item>
+                    <div style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
+                        {words}
+                    </div>
+                </Form.Item>
+            </span>
             {allWordsSelected && (
                 <Form.Item>
                 <Typography.Text strong className={congratsClass}>
                     Congratulations! You found all words!
                 </Typography.Text>
-                <Button type="primary" className={submitButtonClass} onClick={finishReview}>
+                <Button type="primary" className={submitButtonClass} onClick={finishReview} ref={refMap['result-wrapper']}>
                     Submit your results!
                 </Button>
             </Form.Item>

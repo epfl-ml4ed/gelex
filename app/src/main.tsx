@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { ConfigProvider, theme } from 'antd';
 import {catppuccinColors} from '../catppuccin_scheme';
+import { TourProvider } from './components/index.ts';
 
 
 const Main = () => {
@@ -58,7 +59,9 @@ const Main = () => {
           }
         }}
       >
+      <TourProvider>
         <App setDarkMode={setIsDarkMode}/>
+      </TourProvider>
       </ConfigProvider>
     </React.StrictMode>
   );
