@@ -65,7 +65,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({submitHit, currentStep, a
         const refs:IPageRef[] = []
         refs.push({
             title: 'Your recipe!',
-            content: `You'll be writing your recipe here! Any recipe is fine, but make sure it's at least 25 characters long!`,
+            content: `writing your recipe here! Any recipe is fine, but make sure it's at least 25 characters long!`,
             target: refMap['recipe-form'],
             onClose: () => { handleSubmit(true); setTourOpen(false); }
         });
@@ -92,7 +92,6 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({submitHit, currentStep, a
         if(!doTour) return;
         if(currentPage === 2) return;
         if(currentPage === 1) {
-            console.log('Starting tour on RecipeForm', createTour());
             setCurrentPage(2);
             startTour(createTour());
         }

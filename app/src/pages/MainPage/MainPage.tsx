@@ -1,6 +1,6 @@
 import { Card, Col, Empty, Popover, Row, Space } from "antd"
 import { Guider, IPageRef, ImprovedRecipeDisplaySentenceScale, ImprovedRecipeDisplayWordScale, RecipeForm, TourContext } from "../../components"
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { BackendInput, ImprovedRecipe, BackendResponse, BackendUserResult, BackendUserResultDetails } from "../../types";
 import { NotificationInstance } from "antd/es/notification/interface";
 import { BulbOutlined, QuestionOutlined } from "@ant-design/icons";
@@ -9,14 +9,20 @@ type MainPageProps = {
     api: NotificationInstance
     setActivePage: (page: string) => void;
     currentMode: string;
+    setAppStep: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const backendUrl = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com'
 
-export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMode}) => {
+export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMode, setAppStep}) => {
     const { doTour, setCurrentPage, startTour, setDoTour } = useContext(TourContext);
 
     const [currentStep, setStep] = useState(0);
+
+    useEffect(() => {
+        setAppStep(currentStep);
+    }, [currentStep, setAppStep]);
+
     const [originalRecipe, setOriginalRecipe] = useState<string>('');
     const [improvementLevel, setImprovementLevel] = useState<number>(0);
     // Does the cookie savedImprovedRecipe exist? (for debugging)
@@ -72,7 +78,6 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
             })
             setCurrentPage(3)
             setTimeout(()=>startTour(refState),1);
-            console.log('starting Tour', refState)
             setStep(2);
             return;
         }

@@ -27,7 +27,7 @@ interface ITourContext {
 const defaultState: ITourContext = {
   tourOpen: false,
   setTourOpen: () => {},
-  currentPage: 0,
+  currentPage: -1,
   setCurrentPage: () => {},
   startTour: () => {},
   pageRefs: [],
@@ -45,7 +45,7 @@ interface TourProviderProps {
 
 export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
   const [tourOpen, setTourOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(-1);
   const [pageRefs, setPageRefs] = useState<IPageRef[]>([]);
   const [doTour, setDoTour] = useState<boolean>(false);
   const [tourStep, setTourStep] = useState<number>(0);

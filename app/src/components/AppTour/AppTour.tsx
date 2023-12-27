@@ -10,9 +10,11 @@ export const AppTour: React.FC = () => {
     description: ref.content,
     target: () => ref.target.current as HTMLElement,
     onClose: () => {
-      ref.onClose && ref.onClose();
+      if(ref.onClose){
+        ref.onClose();
+      }
       if (ref.preventClose) {
-        console.log('Preventing close for ', ref.title)
+        // console.log('Preventing close for ', ref.title)
         return;
       };
       setTourStep(0);
@@ -22,18 +24,17 @@ export const AppTour: React.FC = () => {
       onClick: () => {
         if(ref.onNext){
           ref.onNext();
-          console.log('Calling onNext for ', ref.title)
         }
         if (index < pageRefs.length - 1) {
-          console.log('calling setTourStep to ', index+1)
+          // console.log('calling setTourStep to ', index+1)
           setTourStep(index+1);
         }
         else if(index === pageRefs.length - 1) {
           if(ref.preventClose){
-            console.log('Preventing close for ', ref.title)
+            // console.log('Preventing close for ', ref.title)
             return
           }
-          console.log('Calling onClose for ', ref.title)
+          // console.log('Calling onClose for ', ref.title)
           ref.onClose && ref.onClose();
           setTourStep(0);
           setTourOpen(false);

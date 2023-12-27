@@ -12,6 +12,7 @@ type AppProps = {
 };
 
 const App: React.FC<AppProps> = ({setDarkMode}) => {
+    const [appStep, setAppStep] = useState(0);
     const [activeTab, setActiveTab] = useState<string>('welcome'); // Set 'welcome' as initial state
     const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(true); // Set 'welcome' as initial state
     // Has tour been completed before?
@@ -62,12 +63,20 @@ const App: React.FC<AppProps> = ({setDarkMode}) => {
                     isDarkMode={isDarkMode}
                     currentMode={currentMode}
                     setCurrentMode={setCurrentMode}
+                    appStep={appStep}
+                    activeTab={activeTab}
+                    api={api}
                 />
                 <Content style={{ padding: '2rem 0' }}>
                     <Row>
                         <Col span={2}/>
                         <Col span={20}>
-                            {activeTab === 'app' && <MainPage api={api} setActivePage={handleMenuSelect} currentMode={currentMode}/>}
+                            {activeTab === 'app' && <MainPage 
+                            api={api} 
+                            setActivePage={handleMenuSelect} 
+                            currentMode={currentMode}
+                            setAppStep={setAppStep}
+                            />}
                             {activeTab === 'about' && <p>About Us content</p>}
                             {activeTab === 'result' && <ResultPage setActivePage={handleMenuSelect} />}
                         </Col>

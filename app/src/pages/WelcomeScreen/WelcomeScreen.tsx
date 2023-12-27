@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useRef } from 'react';
 import { List, Button, Typography } from 'antd';
 import { ArrowUpOutlined, CoffeeOutlined, EditOutlined, InfoCircleOutlined, QuestionCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import './WelcomeScreen.css';
 import { IPageRef, TourContext } from '../../components';
+import { NotificationInstance } from 'antd/es/notification/interface';
 
 type WelcomeScreenProps = {
   onMenuSelect: (menu: string) => void;
@@ -11,6 +12,9 @@ type WelcomeScreenProps = {
   isDarkMode: boolean;
   currentMode: string;
   setCurrentMode?: (mode: string) => void;
+  activeTab: string;
+  api: NotificationInstance;
+  appStep: number;
 };
 
 const menuItems = [
@@ -21,7 +25,16 @@ const menuItems = [
 
 const { Text } = Typography;
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onMenuSelect, toggleDarkMode, className, isDarkMode, currentMode, setCurrentMode }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ 
+  onMenuSelect, 
+  toggleDarkMode, 
+  className, 
+  isDarkMode, 
+  currentMode, 
+  setCurrentMode,
+  activeTab,
+  api,
+  appStep }) => {
 
 
   const switchText = currentMode === 'word' ? 'sentence' : 'word';
@@ -41,7 +54,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onMenuSelect, toggleDarkM
       setCurrentMode && setCurrentMode(currentMode === 'word' ? 'sentence' : 'word');
     }
     else if (key === 'tour'){
+      if(activeTab === 'app' && appStep !== 0) {
+        api.warning({
+          message: 'Warning',
+          description: 'You are currently in the middle of a recipe. Please finish it before restarting the tour.',
+          placement: 'top',
+        });
+        return;
+      }
       setDoTour(true);
+      setCurrentPage(-1);
     }
     else {
       if(key !== 'app' && doTour) return;
@@ -59,61 +81,60 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onMenuSelect, toggleDarkM
   refMap['tour'] = useRef<HTMLDivElement>(null);
   refMap['empty'] = useRef<HTMLDivElement>(null);
 
-  const createFirstStep = () => {
+  const steps = useMemo(() => {
     const refs:IPageRef[] = []
     refs.push({
       title: 'Welcome!',
       content: `Welcome to Gen-AI Kitchen! This was conceived as a semester project at ML4ED Lab at EPFL.
       Since this is your first time visiting (or re-requesting a tour), let us show you around!`,
       target: refMap.empty,
-      onClose: () => { refMap.app.current?.click(); }
+      onClose: () => { refMap.app.current?.click(); setCurrentPage(1); }
     });
     refs.push({
       title: 'Welcome screen!',
       content: `This is the welcome screen. This is what you'll be using to navigate around the app.`,
       target: refMap.welcome,
-      onClose: () => { refMap.app.current?.click(); }
+      onClose: () => { refMap.app.current?.click(); setCurrentPage(1); }
     });
     refs.push({
       title: 'Start Cooking',
       content: 'Click here to go to app and start cooking!',
       target: refMap.app,
-      onClose: () => { refMap.app.current?.click(); }    
+      onClose: () => { refMap.app.current?.click(); setCurrentPage(1); }    
     });
     refs.push({
       title: 'About Us',
       content: 'Click here to learn more about us!',
       target: refMap.about,
-      onClose: () => { refMap.app.current?.click(); }    
+      onClose: () => { refMap.app.current?.click(); setCurrentPage(1); }    
     });
     refs.push({
       title: 'Toggle Dark Mode',
       content: 'Click here to toggle dark mode!',
       target: refMap.toggle,
-      onClose: () => { refMap.app.current?.click(); }    
+      onClose: () => { refMap.app.current?.click(); setCurrentPage(1); }    
     });
     refs.push({
       title: 'Switch to sentence mode',
       content: 'Click here to mark the changes in sentence scale! Don\'t worry, this will be explained more in detail later!',
       target: refMap['sentence-mode'],
-      onClose: () => { refMap.app.current?.click(); }    
+      onClose: () => { setCurrentPage(1); refMap.app.current?.click(); }    
     });
     refs.push({
       title: 'Restart Tour',
       content: 'You can always restart the tour by clicking here!',
       target: refMap.tour,
-      onClose: () => { refMap.app.current?.click();  }
+      onClose: () => { setCurrentPage(1); refMap.app.current?.click(); }
     });
     return refs;
-  }
+  }, [refMap, setCurrentPage]);
     
   useEffect(() => {
     if(!doTour) return;
-    if(currentPage === 0) {
-      startTour(createFirstStep());
-      setCurrentPage(1);
+    if(currentPage === -1) {
+      startTour(steps);
+      setCurrentPage(0);
     }
-
   }, [startTour, doTour, currentPage, setCurrentPage]);
 
   return (
