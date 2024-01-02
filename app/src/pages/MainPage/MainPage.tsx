@@ -66,7 +66,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
     const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
 
     const submitHit = (recipe: string, improvementLevel: number, fromTour?: boolean) => {
-        console.log('Submitting recipe: ', recipe, fromTour)
+        console.log('Submitting recipe mainpage: ', recipe, fromTour)
         if(doTour && fromTour){
             setImprovedRecipe({
                 recipeText: 'This is an example improved recipe. Click on the words you think are new!',

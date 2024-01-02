@@ -98,7 +98,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({submitHit, currentStep, a
     }, [startTour, doTour, currentPage, setCurrentPage, createTour]);
       
     return (
-        <Form onFinish={handleSubmit} style={{height: '100%'}}>
+        <Form style={{height: '100%'}}>
             <Form.Item>
                 <Row>
                     <Col span={12}>
