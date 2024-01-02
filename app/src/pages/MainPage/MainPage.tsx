@@ -86,10 +86,12 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
 
         const handleError = (error: Event) => {
             console.error("WebSocket error:", error);
-            setOriginalRecipe('');
-            setImprovedRecipe(undefined);
             setimprovedRecipeLoading(false);
-            setStep(0);
+            if(currentStep !== 2){
+                setOriginalRecipe('');
+                setImprovedRecipe(undefined);
+                setStep(0);
+            }
         }
 
         // Pass this function to the parent
@@ -103,7 +105,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
     }, [setOnChildDataReceive, setOnChildErrorReceive]);
 
     const submitHit = async (recipe: string, improvementLevel: number, fromTour?: boolean) => {
-        console.log('Submitting recipe mainpage: ', recipe, fromTour)
+        // console.log('Submitting recipe mainpage: ', recipe, fromTour)
         if(doTour && fromTour){
             setImprovedRecipe({
                 recipeText: 'This is an example improved recipe. Click on the words you think are new!',

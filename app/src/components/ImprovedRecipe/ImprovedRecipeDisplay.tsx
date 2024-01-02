@@ -133,7 +133,9 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
     const { indices } = useMemo(() => {
         const indices = new Set<number>();
         Object.values(annotations).forEach(tuples => {
-            tuples.forEach(([, index]) => indices.add(index));
+            tuples.forEach(([, index]) => {
+                indices.add(index);
+            });
         });
         return { indices }
     }, [annotations]);
@@ -141,25 +143,48 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
     useEffect(() => {
         setRevealExtraWord(() => () => {
             // Find index that is in annotations but not in selectedWords
-            const index = Array.from(indices).find(index => (wordToSentenceIndex.has(index) && !selectedSentences.has(wordToSentenceIndex.get(index)!)));
-            if (index !== undefined) {
+            const indicesInAnnotations = Array.from(indices);
+            const indicesInSelectedWords = Array.from(selectedSentences.keys());
+            const indicesNotSelected = indicesInAnnotations.filter((index) => !indicesInSelectedWords.includes(index));
+            // console.log('Indices in annotations', indicesInAnnotations)
+            // console.log('Indices in selected words', indicesInSelectedWords)
+            // console.log('Indices not selected', indicesNotSelected)
+            const randomIndex = indicesNotSelected[Math.floor(Math.random() * indicesNotSelected.length)];
+            // console.log('Random index', randomIndex)
+            const sentenceIndex = wordToSentenceIndex.get(randomIndex);
+            // console.log('Sentence index', sentenceIndex)
+            if (sentenceIndex !== undefined) {
                 setSelectedSentences(prev => {
                     const newSelected = new Map(prev);
-                    newSelected.set(wordToSentenceIndex.get(index)!, 'correct');
+                    newSelected.set(sentenceIndex, 'correct');
                     return newSelected;
                 });
-                setShowPopover(wordToSentenceIndex.get(index)!);
+                setShowPopover(sentenceIndex);
             }
         });
         setRevealAllWords(() => () => {
             // Find ALL indices that are in annotations but not in selectedWords
-            const newSelectedSentences = new Map(selectedSentences);
-            indices.forEach(index => {
-                if (!(wordToSentenceIndex.has(index) && selectedSentences.has(wordToSentenceIndex.get(index)!))) {
-                    newSelectedSentences.set(wordToSentenceIndex.get(index)!, 'correct');
+            const indicesInAnnotations = Array.from(indices);
+            const indicesInSelectedWords = Array.from(selectedSentences.keys());
+            const indicesNotSelected = indicesInAnnotations.filter((index) => !indicesInSelectedWords.includes(index));
+            // console.log('Indices in annotations', indicesInAnnotations)
+            // console.log('Indices in selected words', indicesInSelectedWords)
+            // console.log('Indices not selected', indicesNotSelected)
+            // console.log('Sentence Indices not selected', indicesNotSelected.map((index) => wordToSentenceIndex.get(index)))
+            indicesNotSelected.forEach((randomIndex) => {
+                const sentenceIndex = wordToSentenceIndex.get(randomIndex);
+                // console.log('Random index', randomIndex)
+                // console.log('Sentence index', sentenceIndex)
+                if (sentenceIndex !== undefined) {
+                    setSelectedSentences(prev => {
+                        const newSelected = new Map(prev);
+                        newSelected.set(sentenceIndex, 'correct');
+                        return newSelected;
+                    });
+                    setShowPopover(sentenceIndex);
                 }
             });
-            setSelectedSentences(newSelectedSentences);
+
         });
     }, [selectedSentences, indices, wordToSentenceIndex]);
 
@@ -218,6 +243,7 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
         let sentenceIndex = 0; // Tracks the index of sentences
         const wordIndexToSentenceIndex = new Map<number, number>();
         let totalSentenceCount = 0;
+        let wordIndexCounter = 0;
         const sentences:string[] = []
         const elementsToAdd:(ClickableSentenceTempProps|BreakElementProps)[] = recipeText.split('\n').flatMap((line, _) => {
             if (line.trim().length === 0) {
@@ -229,8 +255,9 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
                 lineMatch = [line]
             }
             const sentenceElements =  lineMatch.map((sentence, _) => {
-                // Boundary calculation
-                const wordsInSentence = sentence.split(/\s+/)
+                // Boundary calculation 
+                // split and Remove words that are just ""
+                const wordsInSentence = sentence.split(/\s+/).filter((word) => word !== "");
                 const currentSentenceIndex = sentenceIndex;
                 sentenceIndex += 1;
                 // Iterate over the annotations and find the words that are in the sentence
@@ -248,9 +275,11 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
                     }).flat();
                     
                     // Map the wordIndexes to the sentenceIndex
-                    // console.log('Sentence', currentSentenceIndex, 'has words', wordAnnotations)
+                    // console.log('Sentence', currentSentenceIndex, 'has words', wordAnnotations, 'between Indexes', wordIndexCounter, 'and', wordIndexCounter + wordsInSentence.length, wordsInSentence)
                     wordIndexes.forEach(({word: _, wordIndex}) => {
-                        wordIndexToSentenceIndex.set(wordIndex, currentSentenceIndex);
+                        if(wordIndex >= wordIndexCounter && wordIndexCounter < wordIndexCounter + wordsInSentence.length){
+                            wordIndexToSentenceIndex.set(wordIndex, currentSentenceIndex);
+                        }
                     });
 
                     if(wordIndexes.length > 0){
@@ -286,6 +315,7 @@ export const ImprovedRecipeDisplaySentenceScale: React.FC<ImprovedRecipeDisplayP
                     }
                 };
                 sentences.push(sentence)
+                wordIndexCounter += wordsInSentence.length;
                 return (
                     {
                         sentence: sentence,
