@@ -11,7 +11,7 @@ type MainPageProps = {
     currentMode: string;
     setAppStep: React.Dispatch<React.SetStateAction<number>>;
 }
-const backendUrl = 'wss://gelex-backend-a3bfadfb8f41.herokuapp.com/ws'; 
+const backendUrl = 'wss://gelex-backend-a3bfadfb8f41.herokuapp.com/ws/example'; 
 const backendUrlHttp = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com'
 // const backendUrl = 'ws://localhost:8000/ws/example';
 
@@ -157,7 +157,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
                 user_recipe: recipe,
                 number_of_rules: rule_counts[improvementLevel],
                 user_id: userId,
-            });
+            } as BackendInput);
 
             // Send data through WebSocket
             ws.send(dataToSend);
