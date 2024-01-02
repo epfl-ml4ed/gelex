@@ -5,17 +5,19 @@ import { BackendInput, ImprovedRecipe, BackendResponse, BackendUserResult, Backe
 import { NotificationInstance } from "antd/es/notification/interface";
 import { BulbOutlined, QuestionOutlined } from "@ant-design/icons";
 
+
 type MainPageProps = {
     api: NotificationInstance
     setActivePage: (page: string) => void;
     currentMode: string;
     setAppStep: React.Dispatch<React.SetStateAction<number>>;
+    ws: WebSocket;
+    setOnChildDataReceive: (fn: (data: BackendResponse) => void) => void;
+    setOnChildErrorReceive: (fn: (error: Event) => void) => void;
 }
-const backendUrl = 'wss://gelex-backend-a3bfadfb8f41.herokuapp.com/ws/example'; 
 const backendUrlHttp = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com'
-// const backendUrl = 'ws://localhost:8000/ws/example';
 
-export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMode, setAppStep}) => {
+export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMode, setAppStep, setOnChildDataReceive, setOnChildErrorReceive, ws}) => {
     const { doTour, setCurrentPage, startTour, setDoTour } = useContext(TourContext);
 
     const [currentStep, setStep] = useState(0);
@@ -26,7 +28,8 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
 
     const [originalRecipe, setOriginalRecipe] = useState<string>('');
     const [improvementLevel, setImprovementLevel] = useState<number>(0);
-    const [ws, setWs] = useState<WebSocket | null>(null);
+    const [revealExtraWord, setRevealExtraWord] = useState<() => void>(() => () => {});
+    const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
     // Does the cookie savedImprovedRecipe exist? (for debugging)
     // const savedImprovedRecipe = document.cookie.split(';').find((cookie) => cookie.includes('savedImprovedRecipe'))?.split('=')[1];
     const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>();
@@ -62,26 +65,15 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
             }
         }
     ]);
-    
-    const [revealExtraWord, setRevealExtraWord] = useState<() => void>(() => () => {});
-    const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
+
 
     useEffect(() => {
-        // Create a WebSocket connection when the component mounts
-        console.log('Creating WebSocket connection...');
-        const webSocket = new WebSocket(backendUrl);
-
-        webSocket.onopen = () => {
-            console.log("WebSocket connection established");
-        };
-
-        webSocket.onmessage = (event) => {
-            // Handle incoming messages
-            const dataBackEnd = JSON.parse(event.data) as BackendResponse;
+        // Define the function that the parent will call
+        const handleData = (data: BackendResponse) => {
             setImprovementLevel(improvementLevel);
             setImprovedRecipe({
-                recipeText: dataBackEnd.example_recipe,
-                annotations: dataBackEnd.annotations,
+                recipeText: data.example_recipe,
+                annotations: data.annotations,
             });
             setimprovedRecipeLoading(false);
             setStep(2);
@@ -92,32 +84,25 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
             });
         };
 
-        webSocket.onerror = (error) => {
+        const handleError = (error: Event) => {
             console.error("WebSocket error:", error);
             setOriginalRecipe('');
             setImprovedRecipe(undefined);
             setimprovedRecipeLoading(false);
             setStep(0);
-            // api.error({
-            //     message: 'Error',
-            //     description: 'A connection error occurred. Please try again.',
-            //     placement: 'top',
-            // });
-        };
+        }
 
-        webSocket.onclose = () => {
-            console.log("WebSocket connection closed");
-        };
+        // Pass this function to the parent
+        setOnChildDataReceive(handleData);
+        setOnChildErrorReceive(handleError);
 
-        setWs(webSocket);
-
-        // Clean up on component unmount
         return () => {
-            webSocket.close();
+            setOnChildDataReceive(() => {});
+            setOnChildErrorReceive(() => {});
         };
-    }, []);
+    }, [setOnChildDataReceive, setOnChildErrorReceive]);
 
-    const submitHit = (recipe: string, improvementLevel: number, fromTour?: boolean) => {
+    const submitHit = async (recipe: string, improvementLevel: number, fromTour?: boolean) => {
         console.log('Submitting recipe mainpage: ', recipe, fromTour)
         if(doTour && fromTour){
             setImprovedRecipe({
@@ -148,9 +133,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
         setStep(1);
 
         // Read userId from cookie
-        const userId = document.cookie.split(';').find((cookie) => cookie.includes('userId'))?.split('=')[1];
-
-        // Check if WebSocket is connected
+        const userId = document.cookie.split(';').find((cookie) => cookie.includes('userId'))?.split('=')[1];    
         if (ws && ws.readyState === WebSocket.OPEN) {
             // Prepare the data to send
             const dataToSend = JSON.stringify({
@@ -161,14 +144,13 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
 
             // Send data through WebSocket
             ws.send(dataToSend);
-            setimprovedRecipeLoading(true);
             setOriginalRecipe(recipe);
-            setStep(1);
-        } else {
+        }
+        else{
             console.error("WebSocket is not connected.");
             api.error({
                 message: 'Error',
-                description: 'WebSocket connection not established.',
+                description: 'Connection to the server failed. Please try again.',
                 placement: 'top',
             });
             setOriginalRecipe('');

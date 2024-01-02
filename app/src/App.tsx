@@ -5,16 +5,21 @@ import './App.css';
 import { MainPage, ResultPage } from './pages';
 import WelcomeScreen from './pages/WelcomeScreen/WelcomeScreen';
 import { AppTour,TourContext } from './components';
+import { BackendResponse } from './types';
 
 
 type AppProps = {
     setDarkMode: (isDarkMode: boolean) => void;
+    setOnChildDataReceive: (fn: (data: BackendResponse) => void) => void;
+    setOnChildErrorReceive: (fn: (error: Event) => void) => void
+    ws: WebSocket | null;
 };
 
-const App: React.FC<AppProps> = ({setDarkMode}) => {
+const App: React.FC<AppProps> = ({setDarkMode, setOnChildDataReceive, setOnChildErrorReceive, ws}) => {
     const [appStep, setAppStep] = useState(0);
     const [activeTab, setActiveTab] = useState<string>('welcome'); // Set 'welcome' as initial state
     const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(true); // Set 'welcome' as initial state
+
     // Has tour been completed before?
     // Read tour from cookie
     const { setDoTour } = useContext(TourContext);
@@ -71,11 +76,14 @@ const App: React.FC<AppProps> = ({setDarkMode}) => {
                     <Row>
                         <Col span={2}/>
                         <Col span={20}>
-                            {activeTab === 'app' && <MainPage 
+                            {activeTab === 'app' && ws!==null && <MainPage 
                             api={api} 
                             setActivePage={handleMenuSelect} 
                             currentMode={currentMode}
                             setAppStep={setAppStep}
+                            setOnChildDataReceive={setOnChildDataReceive}
+                            setOnChildErrorReceive={setOnChildErrorReceive}
+                            ws={ws}
                             />}
                             {activeTab === 'about' && <p>About Us content</p>}
                             {activeTab === 'result' && <ResultPage setActivePage={handleMenuSelect} />}
