@@ -11,8 +11,9 @@ type MainPageProps = {
     currentMode: string;
     setAppStep: React.Dispatch<React.SetStateAction<number>>;
 }
-
-const backendUrl = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com'
+const backendUrl = 'wss://gelex-backend-a3bfadfb8f41.herokuapp.com/ws'; 
+const backendUrlHttp = 'https://gelex-backend-a3bfadfb8f41.herokuapp.com'
+// const backendUrl = 'ws://localhost:8000/ws/example';
 
 export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMode, setAppStep}) => {
     const { doTour, setCurrentPage, startTour, setDoTour } = useContext(TourContext);
@@ -25,6 +26,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
 
     const [originalRecipe, setOriginalRecipe] = useState<string>('');
     const [improvementLevel, setImprovementLevel] = useState<number>(0);
+    const [ws, setWs] = useState<WebSocket | null>(null);
     // Does the cookie savedImprovedRecipe exist? (for debugging)
     // const savedImprovedRecipe = document.cookie.split(';').find((cookie) => cookie.includes('savedImprovedRecipe'))?.split('=')[1];
     const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>();
@@ -61,9 +63,59 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
         }
     ]);
     
-
     const [revealExtraWord, setRevealExtraWord] = useState<() => void>(() => () => {});
     const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
+
+    useEffect(() => {
+        // Create a WebSocket connection when the component mounts
+        console.log('Creating WebSocket connection...');
+        const webSocket = new WebSocket(backendUrl);
+
+        webSocket.onopen = () => {
+            console.log("WebSocket connection established");
+        };
+
+        webSocket.onmessage = (event) => {
+            // Handle incoming messages
+            const dataBackEnd = JSON.parse(event.data) as BackendResponse;
+            setImprovementLevel(improvementLevel);
+            setImprovedRecipe({
+                recipeText: dataBackEnd.example_recipe,
+                annotations: dataBackEnd.annotations,
+            });
+            setimprovedRecipeLoading(false);
+            setStep(2);
+            api.success({
+                message: 'Your new recipe is here!',
+                description: 'Can you identify the changes? Click on the words you think are new!',
+                placement: 'top',
+            });
+        };
+
+        webSocket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            setOriginalRecipe('');
+            setImprovedRecipe(undefined);
+            setimprovedRecipeLoading(false);
+            setStep(0);
+            // api.error({
+            //     message: 'Error',
+            //     description: 'A connection error occurred. Please try again.',
+            //     placement: 'top',
+            // });
+        };
+
+        webSocket.onclose = () => {
+            console.log("WebSocket connection closed");
+        };
+
+        setWs(webSocket);
+
+        // Clean up on component unmount
+        return () => {
+            webSocket.close();
+        };
+    }, []);
 
     const submitHit = (recipe: string, improvementLevel: number, fromTour?: boolean) => {
         console.log('Submitting recipe mainpage: ', recipe, fromTour)
@@ -98,50 +150,32 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
         // Read userId from cookie
         const userId = document.cookie.split(';').find((cookie) => cookie.includes('userId'))?.split('=')[1];
 
-        // Hit the backendUrl/example with a post request
-        // The backend will return a new recipe
-        fetch(`${backendUrl}/example`, {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
+        // Check if WebSocket is connected
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            // Prepare the data to send
+            const dataToSend = JSON.stringify({
                 user_recipe: recipe,
                 number_of_rules: rule_counts[improvementLevel],
                 user_id: userId,
-            } as BackendInput)
-        }).then(response => response.json().then((data) => {
-            const dataBackEnd = data as BackendResponse;
-            // console.log('DataBackend:', dataBackEnd)
-            setOriginalRecipe(recipe);
-            setImprovementLevel(improvementLevel);
-            setImprovedRecipe({
-                recipeText: dataBackEnd.example_recipe,
-                annotations: dataBackEnd.annotations,
-            });
-            setimprovedRecipeLoading(false);
-            setStep(2);
-            // console.log('Annotations: ', data.annotations);
-            // console.log('Recipe: ', data.example_recipe);
-            api.success({
-                message: 'Your new recipe is here!',
-                description: 'Can you identify the changes? Click on the words you think are new!',
-                placement: 'top',
             });
 
-        })).catch(error => {
-            setimprovedRecipeLoading(false);
-            setStep(0);
-            console.log(error);
+            // Send data through WebSocket
+            ws.send(dataToSend);
+            setimprovedRecipeLoading(true);
+            setOriginalRecipe(recipe);
+            setStep(1);
+        } else {
+            console.error("WebSocket is not connected.");
             api.error({
                 message: 'Error',
-                description: 'Something went wrong. Please try again.',
+                description: 'WebSocket connection not established.',
                 placement: 'top',
-                duration: 0,
             });
+            setOriginalRecipe('');
+            setImprovedRecipe(undefined);
+            setStep(0);
+            setimprovedRecipeLoading(false);
         }
-        );
     };
 
     const finishReview = (results:BackendUserResultDetails) => {
@@ -171,7 +205,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
         }
         // console.log('Submitting results', resultsForBackend);
         // Hit endpoint with results(/trace/)
-        fetch(`${backendUrl}/trace`, {
+        fetch(`${backendUrlHttp}/trace`, {
             method: 'POST',
             mode: 'cors',
             headers: {
