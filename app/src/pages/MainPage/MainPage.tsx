@@ -31,7 +31,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
     const [revealExtraWord, setRevealExtraWord] = useState<() => void>(() => () => {});
     const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
     // Does the cookie savedImprovedRecipe exist? (for debugging)
-    const savedImprovedRecipe = document.cookie.split(';').find((cookie) => cookie.includes('savedImprovedRecipe'))?.split('=')[1];
+    // const savedImprovedRecipe = document.cookie.split(';').find((cookie) => cookie.includes('savedImprovedRecipe'))?.split('=')[1];
     const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>(savedImprovedRecipe ? JSON.parse(savedImprovedRecipe) : undefined);
     const [improvedRecipeLoading, setimprovedRecipeLoading] = useState(false);
     // Ref Map
@@ -76,10 +76,10 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
                 annotations: data.annotations,
             });
             // Save the improved recipe to cookie (for debugging)
-            document.cookie = `savedImprovedRecipe=${JSON.stringify({
-                recipeText: data.example_recipe,
-                annotations: data.annotations,
-            })}`;
+            // document.cookie = `savedImprovedRecipe=${JSON.stringify({
+            //     recipeText: data.example_recipe,
+            //     annotations: data.annotations,
+            // })}`;
             setimprovedRecipeLoading(false);
             setStep(2);
             api.success({
