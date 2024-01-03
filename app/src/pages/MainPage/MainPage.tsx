@@ -32,7 +32,7 @@ export const MainPage: React.FC<MainPageProps> = ({api, setActivePage, currentMo
     const [revealAllWords, setRevealAllWords] = useState<() => void>(() => () => {});
     // Does the cookie savedImprovedRecipe exist? (for debugging)
     // const savedImprovedRecipe = document.cookie.split(';').find((cookie) => cookie.includes('savedImprovedRecipe'))?.split('=')[1];
-    const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>(savedImprovedRecipe ? JSON.parse(savedImprovedRecipe) : undefined);
+    const [improvedRecipe, setImprovedRecipe] = useState<ImprovedRecipe|undefined>();
     const [improvedRecipeLoading, setimprovedRecipeLoading] = useState(false);
     // Ref Map
     const refMap: Record<string, React.RefObject<HTMLDivElement>> = {};
