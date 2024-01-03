@@ -23,6 +23,8 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
     const [allWordsSelected, setAllWordsSelected] = useState<boolean>(false);
     // Read dark mode from config
     const { recipeText, annotations } = improvedRecipe;
+    // const annotations = {'Worcestershire': [['worcestershir', 16], ['worcestershir', 72]], 'sift': [['sift', 37]], 'sifted': [['sift', 54]], 'Heat': [['heat', 45]], 'bowl,': [['bowl', 36]], 'separate': [['separ', 35]], 'choice]': [['choic', 23]], 'Spices': [['spice', 20]], 'spices': [['spice', 40], ['spice', 56]], 'Oil': [['oil', 10]], 'oil': [['oil', 47]], 'Stir': [['stir', 62], ['stir', 78]], 'pour': [['pour', 94]], 'Flour': [['flour', 12]], 'flour': [['flour', 42], ['flour', 58]], 'pan': [['pan', 50]], 'Dry': [['dry', 19]], 'dry': [['dry', 39], ['dry', 55]], 'thicken]': [['thicken', 14]], 'thickens.': [['thicken', 65]], 'thickened': [['thicken', 76]], 'mixture': [['mixtur', 59]], 'mixture.': [['mixtur', 77]]}
+
     // Ref Map
     const refMap: Record<string, React.RefObject<HTMLDivElement>> = {};
     refMap['all-word-wrapper'] = useRef<HTMLDivElement>(null);
@@ -204,8 +206,10 @@ export const ImprovedRecipeDisplayWordScale: React.FC<ImprovedRecipeDisplayProps
         if (line.trim().length === 0) {
             return [<br key={`br-${lineIndex}`} />];
         }
-
-        const wordElements = line.split(/\s+/).map((word) => {
+        //console.log('line-split', line.split(/\s+/));
+        const mappingTemp = line.split(/\s+/).filter((word)=>word.trim().length>0);
+        //console.log('mappingTemp: ', mappingTemp)
+        const wordElements = mappingTemp.map((word) => {
             const currentWordIndex = wordIndex; // Store the current word index
             wordIndex++; // Increment the wordIndex for the next word
 
