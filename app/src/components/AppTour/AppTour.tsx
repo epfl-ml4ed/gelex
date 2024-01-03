@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { Tour, TourProps } from 'antd';
 import { TourContext } from './TourContext';
+import './AppTour.css'
 
 export const AppTour: React.FC = () => {
   const { tourOpen, setTourOpen, pageRefs, setTourStep, tourStep } = useContext(TourContext);
