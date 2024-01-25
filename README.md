@@ -1,0 +1,10 @@
+# GELEX: GEnerative AI-Hybrid System for Example-Based Learning
+
+Learning from examples allows learners to assimilate knowledge and derive general rules for future problem-solving. Traditional example-based learning often relies on static, expert-created content, limiting its scalability, accessibility, and effectiveness as some learners might struggle to relate to the example or find the information redundant. Recent advancements in generative AI, specifically large language models (LLMs), can be used to provide personalized feedback and tailored examples. This paper introduces \texttt{GELEX} (GEnerative-AI Learning through EXamples), a novel hybrid AI system aimed at enhancing example-based learning. \texttt{GELEX} leverages advancements in generative AI, specifically large language models (LLMs) to provide personalized feedback and tailored examples. It considers the limitations of LLMs, such as potential factual inaccuracies, by adopting a hybrid approach that controls and evaluates the generative AI's output. Our approach utilizes association rule mining on the extensive RecipeNLG database to analyze cooking recipes, identifying key patterns and information gaps. When learners submit a recipe for feedback, ChatGPT enriches it by integrating these patterns. Then, learners are prompted to actively process the example by highlighting the changes and critically assessing the modifications. This strategy addresses the challenges of static content in traditional example-based learning, offering a scalable, interactive, and personalized educational tool. 
+
+## Contributing 
+
+This code is provided for educational purposes and aims to facilitate reproduction of our results, and further research 
+in this direction. We have done our best to document, refactor, and test the code before publication.
+
+If you find any bugs or would like to contribute new models, training protocols, etc, please let us know. Feel free to file issues and pull requests on the repo and we will address them as we can.
